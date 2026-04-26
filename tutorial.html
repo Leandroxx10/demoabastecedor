@@ -3,12 +3,212 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>WMoldes | Tutorial Operacional</title>
+    <title>Sistema | Tutorial Operacional</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="tutorial.css">
     <meta name="theme-color" content="#0ea5e9">
     <link rel="manifest" href="manifest.webmanifest">
+    <style>
+        .tutorial-hero p strong { color: var(--primary); }
+        .tutorial-mini-map {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(170px, 1fr));
+            gap: 12px;
+            margin-top: 22px;
+        }
+        .tutorial-mini-map div {
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 14px;
+            background: var(--bg);
+            color: var(--text);
+            font-weight: 700;
+        }
+        .tutorial-mini-map span {
+            display: block;
+            margin-top: 5px;
+            font-weight: 500;
+            opacity: .78;
+            font-size: .9rem;
+        }
+        .demo-panel-block {
+            display: grid;
+            gap: 14px;
+        }
+        .demo-filter-row,
+        .demo-dashboard-tools,
+        .demo-sample-banner {
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            background: var(--card);
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+        }
+        .demo-filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        .demo-filter-row button,
+        .demo-toggle-pill,
+        .demo-chart-toggle {
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            border-radius: 12px;
+            padding: 10px 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .demo-filter-row button.selected,
+        .demo-toggle-pill.active,
+        .demo-chart-toggle.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+        .demo-sample-banner {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            background: rgba(250, 204, 21, .16);
+            border-color: rgba(202, 138, 4, .35);
+            color: #854d0e;
+            font-weight: 800;
+        }
+        .demo-sample-banner.visible { display: flex; }
+        .demo-machine-code {
+            display: inline-flex;
+            align-items: center;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            padding: 2px 5px;
+            color: var(--accent);
+            cursor: pointer;
+            transition: .2s ease;
+        }
+        .demo-machine-code:hover,
+        .demo-machine-code.active {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .demo-card.compact-demo .demo-machine .machine-word { display: none; }
+        .demo-card.compact-demo .demo-card-header { gap: 10px; }
+        .demo-card.compact-demo .demo-btn-group { display: none; }
+        .demo-card.compact-demo .demo-controls { flex-wrap: nowrap; gap: 10px; }
+        .demo-card.compact-demo .demo-line { gap: 8px; }
+        .demo-card.compact-demo .demo-value-stack { min-width: 42px; }
+        .demo-dashboard-tools {
+            display: grid;
+            gap: 12px;
+        }
+        .demo-toggle-line {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        .demo-chart-scroll {
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow-x: auto;
+            background: var(--bg);
+            padding: 12px;
+        }
+        .demo-chart-wide {
+            min-width: 760px;
+            height: 160px;
+            display: flex;
+            align-items: flex-end;
+            gap: 14px;
+            padding: 10px;
+        }
+        .demo-chart-machine {
+            display: grid;
+            justify-items: center;
+            gap: 6px;
+            min-width: 46px;
+        }
+        .demo-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+            height: 110px;
+        }
+        .bar-molde { width: 9px; background: #0ea5e9; border-radius: 5px 5px 0 0; }
+        .bar-blank { width: 9px; background: #0f4c6a; border-radius: 5px 5px 0 0; }
+        .bar-neck { width: 9px; background: #4f46e5; border-radius: 5px 5px 0 0; display: none; }
+        .bar-funil { width: 9px; background: #f59e0b; border-radius: 5px 5px 0 0; display: none; }
+        .show-neck .bar-neck, .show-funil .bar-funil { display: block; }
+        .tutorial-extra-note {
+            margin-top: 10px;
+            padding: 14px 16px;
+            border-left: 4px solid var(--primary);
+            background: var(--primary-light);
+            border-radius: 14px;
+            color: var(--text);
+            line-height: 1.55;
+        }
+
+        /* Animações didáticas com sensação 3D */
+        .tutorial-stage { perspective: 1200px; }
+        .demo-panel-block { transform-style: preserve-3d; }
+        .demo-filter-row,
+        .demo-card,
+        .demo-dashboard-tools,
+        .demo-prefix-panel {
+            transform-style: preserve-3d;
+            transition: transform .45s cubic-bezier(.2,.8,.2,1), box-shadow .45s ease, border-color .45s ease;
+        }
+        .is-3d-focus {
+            transform: translateZ(34px) rotateX(2deg) rotateY(-2deg) scale(1.015);
+            box-shadow: 0 26px 60px rgba(15, 23, 42, .18), 0 10px 22px rgba(14, 165, 233, .14) !important;
+            border-color: rgba(14, 165, 233, .55) !important;
+        }
+        .is-3d-lift { animation: lift3d 1.35s ease-in-out infinite alternate; }
+        .is-3d-flip { animation: flip3d .85s cubic-bezier(.2,.8,.2,1); }
+        .is-3d-slide { animation: slide3d 1.05s cubic-bezier(.2,.8,.2,1); }
+        .is-3d-pop { animation: pop3d .8s cubic-bezier(.2,.8,.2,1); }
+        .spotlight-ring {
+            transform: translateZ(60px);
+            box-shadow: 0 0 0 9999px rgba(15, 23, 42, .05), 0 18px 40px rgba(14, 165, 233, .2);
+        }
+        @keyframes lift3d {
+            from { transform: translateZ(18px) rotateX(1deg) rotateY(-1deg); }
+            to { transform: translateZ(46px) rotateX(4deg) rotateY(-4deg); }
+        }
+        @keyframes flip3d {
+            0% { transform: rotateY(-16deg) translateZ(0) scale(.98); opacity: .88; }
+            60% { transform: rotateY(8deg) translateZ(44px) scale(1.02); opacity: 1; }
+            100% { transform: rotateY(0) translateZ(26px) scale(1); }
+        }
+        @keyframes slide3d {
+            0% { transform: translateX(0) translateZ(0); }
+            45% { transform: translateX(-34px) translateZ(38px) rotateY(4deg); }
+            100% { transform: translateX(0) translateZ(20px); }
+        }
+        @keyframes pop3d {
+            0% { transform: translateZ(0) scale(.94); }
+            55% { transform: translateZ(54px) scale(1.06); }
+            100% { transform: translateZ(24px) scale(1); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .is-3d-lift, .is-3d-flip, .is-3d-slide, .is-3d-pop { animation: none; }
+            .is-3d-focus { transform: none; }
+        }
+
+        @media (max-width: 960px) {
+            .tutorial-mini-map { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 640px) {
+            .tutorial-mini-map { grid-template-columns: 1fr; }
+            .demo-card-header, .demo-line { align-items: stretch; flex-direction: column; }
+            .demo-controls { justify-content: flex-start; }
+        }
+    </style>
 </head>
 <body class="tutorial-page">
     <div class="background-shapes">
@@ -19,9 +219,15 @@
 
     <main class="tutorial-shell">
         <section class="tutorial-hero">
-            <div class="tutorial-badge"><i class="fas fa-graduation-cap"></i> Tutorial Profissional</div>
-            <h1>Como fazer o apontamento corretamente</h1>
-            <p>Guia visual para adicionar e remover quantidade, consultar o prefixo e navegar pelo painel com segurança operacional.</p>
+            <div class="tutorial-badge"><i class="fas fa-graduation-cap"></i> Tutorial Operacional</div>
+            <h1>Como usar o sistema no dia a dia</h1>
+            <p>Este guia ensina, passo a passo, como filtrar um ou vários fornos, usar o modo compacto, fazer apontamentos, consultar prefixos, marcar máquina como amostra, interpretar o dashboard com animações em 3D e operar com segurança mesmo sem experiência prévia neste sistema.</p>
+            <div class="tutorial-mini-map">
+                <div><i class="fas fa-filter"></i> Filtros<span>Selecione um ou vários fornos ao mesmo tempo.</span></div>
+                <div><i class="fas fa-compress-arrows-alt"></i> Modo compacto<span>Reduz o card e deixa somente o essencial visível.</span></div>
+                <div><i class="fas fa-keyboard"></i> Apontamento<span>Use botões rápidos ou teclado para corrigir valores.</span></div>
+                <div><i class="fas fa-chart-column"></i> Dashboard<span>Role horizontalmente e escolha quais séries visualizar.</span></div>
+            </div>
             <div class="tutorial-hero-actions">
                 <button class="primary" id="startTutorialBtn"><i class="fas fa-play"></i> Iniciar tutorial</button>
                 <button class="tutorial-ghost" onclick="window.location.href='index.html'"><i class="fas fa-arrow-left"></i> Voltar ao painel</button>
@@ -33,12 +239,18 @@
                 <h2>Etapas</h2>
                 <div class="tutorial-progress"><span id="tutorialProgressBar"></span></div>
                 <ol id="tutorialStepsList">
-                    <li class="active" data-step="0">Visão geral do cartão</li>
-                    <li data-step="1">Adicionar quantidades</li>
-                    <li data-step="2">Remover quantidades</li>
-                    <li data-step="3">Digitação direta</li>
-                    <li data-step="4">Consultar prefixo</li>
-                    <li data-step="5">Boas práticas</li>
+                    <li class="active" data-step="0">Visão geral</li>
+                    <li data-step="1">Filtro multi-select</li>
+                    <li data-step="2">Limpar filtros</li>
+                    <li data-step="3">Modo compacto</li>
+                    <li data-step="4">Identificação e amostra</li>
+                    <li data-step="5">Adicionar quantidades</li>
+                    <li data-step="6">Remover quantidades</li>
+                    <li data-step="7">Digitação direta</li>
+                    <li data-step="8">Consultar prefixo</li>
+                    <li data-step="9">Dashboard com rolagem</li>
+                    <li data-step="10">Molde, Blank, Neck e Funil</li>
+                    <li data-step="11">Boas práticas</li>
                 </ol>
             </aside>
 
@@ -46,11 +258,11 @@
                 <div class="tutorial-stage-header">
                     <div>
                         <span class="tutorial-step-label" id="tutorialStepLabel">Etapa 1</span>
-                        <h2 id="tutorialStepTitle">Visão geral do cartão</h2>
+                        <h2 id="tutorialStepTitle">Visão geral</h2>
                     </div>
                     <div class="tutorial-nav-inline">
-                        <button id="prevStepBtn"><i class="fas fa-chevron-left"></i></button>
-                        <button id="nextStepBtn"><i class="fas fa-chevron-right"></i></button>
+                        <button id="prevStepBtn" aria-label="Etapa anterior"><i class="fas fa-chevron-left"></i></button>
+                        <button id="nextStepBtn" aria-label="Próxima etapa"><i class="fas fa-chevron-right"></i></button>
                     </div>
                 </div>
 
@@ -59,50 +271,342 @@
                 <div class="tutorial-stage" id="tutorialStage">
                     <div class="spotlight-ring" id="spotlightRing"></div>
 
-                    <div class="demo-card" id="demoCard">
-                        <div class="demo-card-header" id="demoHeader">
-                            <div class="demo-machine"><i class="fas fa-industry"></i> Máquina A3</div>
-                            <button class="demo-prefix-chip" id="demoPrefixChip"><i class="fas fa-tag"></i> PX-410-15</button>
+                    <div class="demo-panel-block">
+                        <div class="demo-filter-row" id="demoFilterRow">
+                            <button id="demoAllFurnaces"><i class="fas fa-layer-group"></i> Todos os Fornos</button>
+                            <button id="demoFurnaceA" class="selected"><i class="fas fa-fire"></i> Forno A (A1-A6)</button>
+                            <button id="demoFurnaceB"><i class="fas fa-fire"></i> Forno B (B1-B8)</button>
+                            <button id="demoFurnaceC"><i class="fas fa-fire"></i> Forno C (C1-C8)</button>
+                            <button id="demoFurnaceD"><i class="fas fa-fire"></i> Forno D (D10-D15)</button>
                         </div>
 
-                        <div class="demo-line" id="demoLineMolde">
-                            <span class="demo-label"><i class="fas fa-cube"></i> Molde</span>
-                            <div class="demo-controls">
-                                <div class="demo-btn-group" id="demoRemoveGroup">
-                                    <button>-10</button><button>-5</button><button>-2</button><button>-1</button>
+                        <div class="demo-card" id="demoCard">
+                            <div class="demo-card-header" id="demoHeader">
+                                <div class="demo-machine" id="demoMachineTitle">
+                                    <i class="fas fa-industry"></i>
+                                    <span class="machine-word">Máquina</span>
+                                    <span class="demo-machine-code" id="demoMachineCode">A3</span>
                                 </div>
-                                <div class="demo-value-stack">
-                                    <span class="demo-value" id="demoValue">12</span>
-                                    <input class="demo-input" id="demoInput" type="number" value="12"/>
+                                <button class="demo-prefix-chip" id="demoPrefixChip"><i class="fas fa-tag"></i> PX-410-15</button>
+                            </div>
+
+                            <div class="demo-sample-banner" id="demoSampleBanner">
+                                <i class="fas fa-vial-circle-check"></i>
+                                Máquina marcada como AMOSTRA. Tenha atenção: esta identificação serve para avisar a equipe antes de qualquer apontamento.
+                            </div>
+
+                            <div class="demo-line" id="demoLineMolde">
+                                <span class="demo-label"><i class="fas fa-cube"></i> Molde</span>
+                                <div class="demo-controls">
+                                    <div class="demo-btn-group" id="demoRemoveGroup">
+                                        <button>-10</button><button>-5</button><button>-2</button><button>-1</button>
+                                    </div>
+                                    <div class="demo-value-stack">
+                                        <span class="demo-value" id="demoValue">12</span>
+                                        <input class="demo-input" id="demoInput" type="number" value="12"/>
+                                    </div>
+                                    <div class="demo-btn-group" id="demoAddGroup">
+                                        <button>+1</button><button>+2</button><button>+5</button><button>+10</button>
+                                    </div>
+                                    <button class="demo-keyboard-btn" id="demoKeyboardBtn"><i class="fas fa-keyboard"></i></button>
                                 </div>
-                                <div class="demo-btn-group" id="demoAddGroup">
-                                    <button>+1</button><button>+2</button><button>+5</button><button>+10</button>
+                            </div>
+
+                            <div class="demo-prefix-panel" id="demoPrefixPanel">
+                                <div class="demo-prefix-grid">
+                                    <div><strong>Processo</strong><span>DG</span></div>
+                                    <div><strong>Corredor</strong><span>07</span></div>
+                                    <div><strong>Prateleira</strong><span>P3</span></div>
+                                    <div><strong>Neck Ring</strong><span>FE-15</span></div>
+                                    <div><strong>Blank</strong><span>BK-220</span></div>
+                                    <div><strong>Molde</strong><span>MD-440</span></div>
                                 </div>
-                                <button class="demo-keyboard-btn" id="demoKeyboardBtn"><i class="fas fa-keyboard"></i></button>
                             </div>
                         </div>
 
-                        <div class="demo-prefix-panel" id="demoPrefixPanel">
-                            <div class="demo-prefix-grid">
-                                <div><strong>Processo</strong><span>DG</span></div>
-                                <div><strong>Corredor</strong><span>07</span></div>
-                                <div><strong>Prateleira</strong><span>P3</span></div>
-                                <div><strong>Neck Ring</strong><span>FE-15</span></div>
-                                <div><strong>Blank</strong><span>BK-220</span></div>
-                                <div><strong>Molde</strong><span>MD-440</span></div>
+                        <div class="demo-dashboard-tools" id="demoDashboardTools">
+                            <div class="demo-toggle-line">
+                                <button class="demo-toggle-pill active" id="demoMoldeToggle">Molde visível</button>
+                                <button class="demo-toggle-pill active" id="demoBlankToggle">Blank visível</button>
+                                <button class="demo-chart-toggle" id="demoNeckToggle">Mostrar Neck Ring</button>
+                                <button class="demo-chart-toggle" id="demoFunilToggle">Mostrar Funil</button>
+                            </div>
+                            <div class="demo-chart-scroll" id="demoChartScroll">
+                                <div class="demo-chart-wide" id="demoChartWide">
+                                    <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:62px"></span><span class="bar-blank" style="height:48px"></span><span class="bar-neck" style="height:80px"></span><span class="bar-funil" style="height:24px"></span></div><small>A1</small></div>
+                                    <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:45px"></span><span class="bar-blank" style="height:55px"></span><span class="bar-neck" style="height:70px"></span><span class="bar-funil" style="height:28px"></span></div><small>A2</small></div>
+                                    <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:74px"></span><span class="bar-blank" style="height:58px"></span><span class="bar-neck" style="height:35px"></span><span class="bar-funil" style="height:42px"></span></div><small>A3</small></div>
+                                    <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:38px"></span><span class="bar-blank" style="height:65px"></span><span class="bar-neck" style="height:92px"></span><span class="bar-funil" style="height:36px"></span></div><small>B1</small></div>
+                                    <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:52px"></span><span class="bar-blank" style="height:40px"></span><span class="bar-neck" style="height:50px"></span><span class="bar-funil" style="height:20px"></span></div><small>B2</small></div>
+                                    <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:85px"></span><span class="bar-blank" style="height:72px"></span><span class="bar-neck" style="height:60px"></span><span class="bar-funil" style="height:44px"></span></div><small>B3</small></div>
+                                    <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:60px"></span><span class="bar-blank" style="height:48px"></span><span class="bar-neck" style="height:78px"></span><span class="bar-funil" style="height:30px"></span></div><small>C1</small></div>
+                                    <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:95px"></span><span class="bar-blank" style="height:100px"></span><span class="bar-neck" style="height:40px"></span><span class="bar-funil" style="height:54px"></span></div><small>C2</small></div>
+                                    <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:50px"></span><span class="bar-blank" style="height:68px"></span><span class="bar-neck" style="height:86px"></span><span class="bar-funil" style="height:26px"></span></div><small>D10</small></div>
+                                    <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:42px"></span><span class="bar-blank" style="height:52px"></span><span class="bar-neck" style="height:74px"></span><span class="bar-funil" style="height:32px"></span></div><small>D11</small></div>
+                                </div>
                             </div>
                         </div>
+
                     </div>
                 </div>
 
                 <div class="tutorial-callout" id="tutorialCallout">
-                    Observe a área destacada. O tutorial sempre mantém foco no elemento em uso para reduzir erro operacional.
+                    Observe a área destacada. O tutorial mantém foco no elemento em uso para reduzir erro operacional.
+                </div>
+                <div class="tutorial-extra-note" id="tutorialExtraNote">
+                    Dica: sempre confira a máquina e o prefixo antes de alterar qualquer valor.
                 </div>
             </section>
         </section>
     </main>
 
-    <script src="tutorial.js"></script>
+    <script>
+    (function () {
+      const steps = [
+        {
+          label: 'Etapa 1',
+          title: 'Visão geral do painel',
+          description: 'O sistema é dividido em filtros de forno, cartões de máquina e dashboard. Primeiro escolha um ou mais fornos, depois localize a máquina e só então faça o apontamento. Cada cartão mostra identificação da máquina, prefixo, valores de estoque e botão de teclado.',
+          callout: 'Comece sempre identificando a máquina correta. No exemplo, o cartão é da máquina A3 e o prefixo atual é PX-410-15.',
+          note: 'Para quem nunca usou o sistema: pense em cada cartão como uma ficha da máquina. Tudo que você altera naquele cartão pertence apenas àquela máquina.',
+          target: '#demoHeader',
+          action: () => { resetDemo(); pulse('#demoHeader'); }
+        },
+        {
+          label: 'Etapa 2',
+          title: 'Filtro multi-select de fornos',
+          description: 'Os filtros de forno agora aceitam mais de uma seleção. Clique em Forno A, Forno B, Forno C ou Forno D para marcar ou desmarcar cada grupo. Quando dois ou mais filtros ficam ativos, o painel mostra as máquinas pertencentes a todos os fornos selecionados.',
+          callout: 'Exemplo: Forno A e Forno B podem ficar selecionados ao mesmo tempo. Isso ajuda a comparar áreas sem precisar ir e voltar várias vezes.',
+          note: 'Botão azul significa selecionado. Botão claro significa não selecionado. Clique novamente no mesmo forno para remover aquele forno da visualização.',
+          target: '#demoFilterRow',
+          action: () => { resetDemo(); setFurnaces(['demoFurnaceA','demoFurnaceB']); pulse('#demoFilterRow'); document.querySelector('#demoFilterRow').classList.add('is-3d-flip'); }
+        },
+        {
+          label: 'Etapa 3',
+          title: 'Como voltar para Todos os Fornos',
+          description: 'Use o botão Todos os Fornos quando quiser limpar a seleção e voltar a visualizar o conjunto completo. Ele remove os filtros ativos e restaura a visão geral.',
+          callout: 'Se você se perder na filtragem, clique em Todos os Fornos. Esse é o caminho mais seguro para recomeçar a navegação.',
+          note: 'Na operação diária, use Todos os Fornos para conferir se uma máquina não está oculta por algum filtro selecionado anteriormente.',
+          target: '#demoAllFurnaces',
+          action: () => { resetDemo(); clearFurnaces(); document.querySelector('#demoAllFurnaces').classList.add('selected'); pulse('#demoAllFurnaces'); document.querySelector('#demoFilterRow').classList.add('is-3d-flip'); }
+        },
+        {
+          label: 'Etapa 4',
+          title: 'Modo compacto',
+          description: 'O modo compacto reduz o tamanho dos cartões para economizar espaço. Nele, os botões de soma e subtração ficam ocultos, o texto Máquina pode ser removido e permanecem visíveis apenas o código da máquina, prefixo, valor atual e botão de teclado.',
+          callout: 'Use o modo compacto quando houver muitas máquinas na tela ou quando o objetivo for apenas consultar valores e fazer correções pelo teclado.',
+          note: 'No modo compacto, o sistema fica mais limpo: menos botões na tela, leitura mais rápida e menor risco de toque acidental nos botões + ou -.',
+          target: '#demoCard',
+          action: () => { resetDemo(); document.querySelector('#demoCard').classList.add('compact-demo'); pulse('#demoCard'); document.querySelector('#demoCard').classList.add('is-3d-flip'); }
+        },
+        {
+          label: 'Etapa 5',
+          title: 'Identificação clicável e máquina amostra',
+          description: 'O código da máquina, como A1, A2, A3, B1 ou D10, é clicável. Ao clicar nele, o cartão passa a informar que aquela máquina é AMOSTRA. A mensagem destacada avisa a equipe antes de qualquer apontamento.',
+          callout: 'A identificação AMOSTRA deve ser usada para sinalizar uma máquina que precisa de atenção especial, validação ou acompanhamento diferenciado.',
+          note: 'Quando a mensagem de amostra aparecer, leia o aviso antes de alterar valores. Isso evita movimentação indevida em máquina de teste, validação ou controle especial.',
+          target: '#demoMachineCode',
+          action: () => { resetDemo(); document.querySelector('#demoMachineCode').classList.add('active'); document.querySelector('#demoSampleBanner').classList.add('visible'); pulse('#demoMachineCode'); document.querySelector('#demoSampleBanner').classList.add('is-3d-pop'); }
+        },
+        {
+          label: 'Etapa 6',
+          title: 'Adicionar quantidades',
+          description: 'Use os botões positivos para registrar entrada, reposição ou acréscimo de peças. Os botões +1, +2, +5 e +10 facilitam a rotina quando o valor aumenta em quantidades conhecidas.',
+          callout: 'Para uma pequena reposição, use +1 ou +2. Para reposições maiores, use +5 ou +10.',
+          note: 'Exemplo: se o valor atual é 12 e você recebeu mais 5 peças, clique em +5. O sistema passa a mostrar 17.',
+          target: '#demoAddGroup',
+          action: () => { resetDemo(); pulse('#demoAddGroup'); animateValue(12, 17); }
+        },
+        {
+          label: 'Etapa 7',
+          title: 'Remover quantidades',
+          description: 'Use os botões negativos para registrar consumo, retirada ou baixa de peças. Os botões -1, -2, -5 e -10 reduzem o saldo rapidamente sem precisar digitar.',
+          callout: 'Antes de reduzir o saldo, confirme se o cartão é da máquina correta. Baixas em máquina errada causam divergência no estoque.',
+          note: 'Exemplo: se o valor atual é 12 e foram consumidas 2 peças, clique em -2. O sistema passa a mostrar 10.',
+          target: '#demoRemoveGroup',
+          action: () => { resetDemo(); pulse('#demoRemoveGroup'); animateValue(12, 10, true); }
+        },
+        {
+          label: 'Etapa 8',
+          title: 'Digitação direta pelo teclado',
+          description: 'Quando precisar informar um valor exato, clique no ícone de teclado. O campo numérico aparece para digitação direta. Essa função é útil em conferência física, correção de divergência e ajuste autorizado.',
+          callout: 'Digite o valor final correto, não a diferença. Se o estoque real é 14, digite 14.',
+          note: 'Use digitação direta com atenção. Ela é mais poderosa que os botões rápidos, porque substitui o valor pelo número informado.',
+          target: '#demoKeyboardBtn',
+          action: () => {
+            resetDemo();
+            const keyboard = document.querySelector('#demoKeyboardBtn');
+            const input = document.querySelector('#demoInput');
+            const value = document.querySelector('#demoValue');
+            keyboard.classList.add('pulse-target');
+            keyboard.style.background = '#0f172a';
+            keyboard.style.color = '#fff';
+            value.style.display = 'none';
+            input.style.display = 'block';
+            input.value = 14;
+            input.classList.add('bounce-soft');
+          }
+        },
+        {
+          label: 'Etapa 9',
+          title: 'Consultar os dados do prefixo',
+          description: 'O prefixo identifica informações técnicas relacionadas ao conjunto da máquina. Ao selecionar o prefixo, o sistema exibe detalhes como processo, corredor, prateleira, Neck Ring, Blank e Molde.',
+          callout: 'Consulte o prefixo sempre que houver dúvida de localização, composição ou identificação do conjunto.',
+          note: 'Essa consulta evita pegar componente errado. Antes de apontar, confira se o prefixo corresponde ao que está sendo usado na operação.',
+          target: '#demoPrefixChip',
+          action: () => { resetDemo(); pulse('#demoPrefixChip'); document.querySelector('#demoPrefixPanel').classList.add('visible','is-3d-pop'); }
+        },
+        {
+          label: 'Etapa 10',
+          title: 'Dashboard com rolagem horizontal',
+          description: 'Os gráficos do dashboard usam rolagem horizontal para facilitar a leitura quando existem muitas máquinas. Em vez de apertar todos os nomes no mesmo espaço, o gráfico fica mais largo e você rola para ver os demais pontos.',
+          callout: 'Arraste a barra horizontal ou use o touchpad/mouse para percorrer o gráfico. Isso melhora a leitura dos nomes das máquinas e das colunas.',
+          note: 'Quando estiver em tela pequena ou com muitos fornos selecionados, a rolagem horizontal é a melhor forma de interpretar o gráfico sem confusão.',
+          target: '#demoChartScroll',
+          action: () => { resetDemo(); document.querySelector('#demoChartScroll').scrollLeft = 160; pulse('#demoChartScroll'); document.querySelector('#demoChartWide').classList.add('is-3d-slide'); }
+        },
+        {
+          label: 'Etapa 11',
+          title: 'Séries visíveis no gráfico',
+          description: 'Por padrão, o dashboard começa mostrando Molde e Blank. Neck Ring e Funil ficam ocultos inicialmente para deixar o gráfico mais limpo. Quando precisar analisar esses itens, ative a visualização nos botões correspondentes.',
+          callout: 'Molde e Blank aparecem primeiro porque são os principais para leitura rápida. Neck Ring e Funil entram apenas quando você escolher mostrar.',
+          note: 'Use essa regra para evitar poluição visual: deixe visível só o que você precisa analisar naquele momento.',
+          target: '#demoDashboardTools',
+          action: () => { resetDemo(); document.querySelector('#demoChartWide').classList.add('show-neck','show-funil','is-3d-pop'); document.querySelector('#demoNeckToggle').classList.add('active'); document.querySelector('#demoFunilToggle').classList.add('active'); pulse('#demoDashboardTools'); }
+        },
+        {
+          label: 'Etapa 12',
+          title: 'Boas práticas de operação',
+          description: 'Antes de apontar, confirme forno, máquina, prefixo e tipo de item. Faça o registro no momento da movimentação. Use filtros para encontrar a máquina, modo compacto para ganhar espaço e dashboard para conferência geral.',
+          callout: 'A sequência segura é: filtrar forno, localizar máquina, conferir prefixo, verificar se é amostra, alterar valor e revisar o resultado.',
+          note: 'Se houver dúvida, não chute o valor. Confira fisicamente, peça apoio da equipe responsável e depois registre o valor correto.',
+          target: '#demoCard',
+          action: () => { resetDemo(); pulse('#demoCard'); }
+        }
+      ];
+
+      const stepLabel = document.getElementById('tutorialStepLabel');
+      const stepTitle = document.getElementById('tutorialStepTitle');
+      const stepDescription = document.getElementById('tutorialStepDescription');
+      const callout = document.getElementById('tutorialCallout');
+      const extraNote = document.getElementById('tutorialExtraNote');
+      const spotlight = document.getElementById('spotlightRing');
+      const progress = document.getElementById('tutorialProgressBar');
+      const listItems = [...document.querySelectorAll('#tutorialStepsList li')];
+      const prevBtn = document.getElementById('prevStepBtn');
+      const nextBtn = document.getElementById('nextStepBtn');
+      const startBtn = document.getElementById('startTutorialBtn');
+      let currentStep = 0;
+
+      function pulse(selector) {
+        document.querySelectorAll('.pulse-target').forEach(el => el.classList.remove('pulse-target'));
+        document.querySelectorAll('.is-3d-focus,.is-3d-lift,.is-3d-flip,.is-3d-slide,.is-3d-pop').forEach(el => el.classList.remove('is-3d-focus','is-3d-lift','is-3d-flip','is-3d-slide','is-3d-pop'));
+        const el = document.querySelector(selector);
+        if (el) el.classList.add('pulse-target','is-3d-focus','is-3d-lift');
+      }
+
+      function setFurnaces(ids) {
+        document.querySelectorAll('#demoFilterRow button').forEach(btn => btn.classList.remove('selected'));
+        ids.forEach(id => document.getElementById(id)?.classList.add('selected'));
+      }
+
+      function clearFurnaces() {
+        document.querySelectorAll('#demoFilterRow button').forEach(btn => btn.classList.remove('selected'));
+      }
+
+      function resetDemo() {
+        document.querySelectorAll('.pulse-target').forEach(el => el.classList.remove('pulse-target'));
+        document.querySelectorAll('.shake-soft').forEach(el => el.classList.remove('shake-soft'));
+        document.querySelectorAll('.bounce-soft').forEach(el => el.classList.remove('bounce-soft'));
+        document.querySelectorAll('.is-3d-focus,.is-3d-lift,.is-3d-flip,.is-3d-slide,.is-3d-pop').forEach(el => el.classList.remove('is-3d-focus','is-3d-lift','is-3d-flip','is-3d-slide','is-3d-pop'));
+        document.querySelector('#demoCard').classList.remove('compact-demo');
+        document.querySelector('#demoMachineCode').classList.remove('active');
+        document.querySelector('#demoSampleBanner').classList.remove('visible');
+        document.querySelector('#demoValue').style.display = 'block';
+        document.querySelector('#demoValue').textContent = '12';
+        document.querySelector('#demoValue').style.color = 'var(--accent)';
+        document.querySelector('#demoInput').style.display = 'none';
+        document.querySelector('#demoKeyboardBtn').style.background = '#e2e8f0';
+        document.querySelector('#demoKeyboardBtn').style.color = '#334155';
+        document.querySelector('#demoPrefixPanel').classList.remove('visible');
+        document.querySelector('#demoChartWide').classList.remove('show-neck','show-funil');
+        document.querySelector('#demoNeckToggle').classList.remove('active');
+        document.querySelector('#demoFunilToggle').classList.remove('active');
+        document.querySelector('#demoChartScroll').scrollLeft = 0;
+        setFurnaces(['demoFurnaceA']);
+      }
+
+      function animateValue(from, to, isDecrease = false) {
+        const value = document.querySelector('#demoValue');
+        value.textContent = String(from);
+        value.style.color = isDecrease ? 'var(--error)' : 'var(--success)';
+        value.classList.add(isDecrease ? 'shake-soft' : 'bounce-soft');
+        setTimeout(() => { value.textContent = String(to); }, 180);
+      }
+
+      function positionSpotlight(selector) {
+        const target = document.querySelector(selector);
+        const stage = document.getElementById('tutorialStage');
+        if (!target || !stage) return;
+        const targetRect = target.getBoundingClientRect();
+        const stageRect = stage.getBoundingClientRect();
+        spotlight.style.opacity = '1';
+        spotlight.style.left = `${targetRect.left - stageRect.left - 10}px`;
+        spotlight.style.top = `${targetRect.top - stageRect.top - 10}px`;
+        spotlight.style.width = `${targetRect.width + 20}px`;
+        spotlight.style.height = `${targetRect.height + 20}px`;
+      }
+
+      function renderStep(index) {
+        currentStep = (index + steps.length) % steps.length;
+        const step = steps[currentStep];
+        stepLabel.textContent = step.label;
+        stepTitle.textContent = step.title;
+        stepDescription.textContent = step.description;
+        callout.textContent = step.callout;
+        extraNote.textContent = step.note;
+        progress.style.width = `${((currentStep + 1) / steps.length) * 100}%`;
+        listItems.forEach((item, i) => item.classList.toggle('active', i === currentStep));
+        step.action();
+        requestAnimationFrame(() => positionSpotlight(step.target));
+      }
+
+      prevBtn.addEventListener('click', () => renderStep(currentStep - 1));
+      nextBtn.addEventListener('click', () => renderStep(currentStep + 1));
+      startBtn.addEventListener('click', () => {
+        document.querySelector('.tutorial-stage-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        renderStep(0);
+      });
+
+      listItems.forEach((item, index) => item.addEventListener('click', () => renderStep(index)));
+      window.addEventListener('resize', () => positionSpotlight(steps[currentStep].target));
+
+      document.querySelector('#demoMachineCode').addEventListener('click', () => {
+        document.querySelector('#demoMachineCode').classList.toggle('active');
+        document.querySelector('#demoSampleBanner').classList.toggle('visible');
+      });
+      document.querySelector('#demoNeckToggle').addEventListener('click', () => {
+        document.querySelector('#demoNeckToggle').classList.toggle('active');
+        document.querySelector('#demoChartWide').classList.toggle('show-neck');
+      });
+      document.querySelector('#demoFunilToggle').addEventListener('click', () => {
+        document.querySelector('#demoFunilToggle').classList.toggle('active');
+        document.querySelector('#demoChartWide').classList.toggle('show-funil');
+      });
+      document.querySelectorAll('#demoFilterRow button:not(#demoAllFurnaces)').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelector('#demoAllFurnaces').classList.remove('selected');
+          btn.classList.toggle('selected');
+        });
+      });
+      document.querySelector('#demoAllFurnaces').addEventListener('click', () => {
+        clearFurnaces();
+        document.querySelector('#demoAllFurnaces').classList.add('selected');
+      });
+
+      renderStep(0);
+    })();
+    </script>
     <script src="pwa-register.js"></script>
 </body>
 </html>
