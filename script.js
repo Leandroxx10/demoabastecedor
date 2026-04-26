@@ -22,7 +22,15 @@ let config = {
     mostrarTotais: true,
     mostrarGraficos: true,
     tema: 'ciano',
-    estoqueMinimo: 3
+    estoqueMinimo: 3,
+    estoqueMinimoMolde: 3,
+    estoqueMinimoBlank: 3,
+    estoqueMinimoNeckring: 3,
+    estoqueMinimoFunil: 3,
+    criticoMoldeAtivo: true,
+    criticoBlankAtivo: true,
+    criticoNeckringAtivo: true,
+    criticoFunilAtivo: true
 };
 
 // Configuração de filtro por forno
@@ -110,6 +118,67 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 });
 
+function normalizarConfiguracoes(configSalva = {}) {
+    const base = { ...config, ...configSalva };
+    const legado = Number.parseInt(base.estoqueMinimo, 10);
+    const limitePadrao = Number.isFinite(legado) ? legado : 3;
+    base.estoqueMinimoMolde = Number.parseInt(base.estoqueMinimoMolde, 10);
+    base.estoqueMinimoBlank = Number.parseInt(base.estoqueMinimoBlank, 10);
+    base.estoqueMinimoNeckring = Number.parseInt(base.estoqueMinimoNeckring, 10);
+    base.estoqueMinimoFunil = Number.parseInt(base.estoqueMinimoFunil, 10);
+    if (!Number.isFinite(base.estoqueMinimoMolde)) base.estoqueMinimoMolde = limitePadrao;
+    if (!Number.isFinite(base.estoqueMinimoBlank)) base.estoqueMinimoBlank = limitePadrao;
+    if (!Number.isFinite(base.estoqueMinimoNeckring)) base.estoqueMinimoNeckring = limitePadrao;
+    if (!Number.isFinite(base.estoqueMinimoFunil)) base.estoqueMinimoFunil = limitePadrao;
+    base.estoqueMinimo = Math.min(base.estoqueMinimoMolde, base.estoqueMinimoBlank, base.estoqueMinimoNeckring, base.estoqueMinimoFunil);
+    base.criticoMoldeAtivo = base.criticoMoldeAtivo !== false;
+    base.criticoBlankAtivo = base.criticoBlankAtivo !== false;
+    base.criticoNeckringAtivo = base.criticoNeckringAtivo !== false;
+    base.criticoFunilAtivo = base.criticoFunilAtivo !== false;
+    return base;
+}
+function obterRegrasCriticas() {
+    return [
+        { campo: 'molde', rotulo: 'Molde', limite: config.estoqueMinimoMolde, ativo: config.criticoMoldeAtivo },
+        { campo: 'blank', rotulo: 'Blank', limite: config.estoqueMinimoBlank, ativo: config.criticoBlankAtivo },
+        { campo: 'neck_ring', rotulo: 'Neck Ring', limite: config.estoqueMinimoNeckring, ativo: config.criticoNeckringAtivo },
+        { campo: 'funil', rotulo: 'Funil', limite: config.estoqueMinimoFunil, ativo: config.criticoFunilAtivo }
+    ];
+}
+function obterItensCriticos(maquina) {
+    return obterRegrasCriticas().filter(regra => regra.ativo && ((maquina?.[regra.campo] || 0) <= regra.limite));
+}
+function maquinaEstaCritica(maquina) { return obterItensCriticos(maquina).length > 0; }
+function atualizarResumoLimitesCriticos() {
+    const el = document.getElementById('estoqueMinimoLabel');
+    if (!el) return;
+    const ativos = obterRegrasCriticas().filter(regra => regra.ativo);
+    el.textContent = ativos.length ? ativos.map(regra => `${regra.rotulo} ≤ ${regra.limite}`).join(' | ') : 'nenhum item ativo';
+}
+function aplicarConfiguracoesNoPainelAdmin() {
+    const setChecked = (id, value) => { const el = document.getElementById(id); if (el) el.checked = Boolean(value); };
+    const setValue = (id, value) => { const el = document.getElementById(id); if (el) el.value = value; };
+    setChecked('toggleReserva', config.mostrarReserva);
+    setChecked('toggleFunil', config.mostrarFunil);
+    setChecked('toggleNeckring', config.mostrarNeckring);
+    setChecked('toggleBlank', config.mostrarBlank);
+    setChecked('toggleMolde', config.mostrarMolde);
+    setChecked('togglePrefixo', config.mostrarPrefixo);
+    setChecked('toggleAlertas', config.alertasAtivos);
+    setChecked('toggleAnimacoes', config.animacoesAtivas);
+    setChecked('autoAtualizar', config.autoAtualizar);
+    setChecked('mostrarTotais', config.mostrarTotais);
+    setChecked('mostrarGraficos', config.mostrarGraficos);
+    setChecked('criticoMoldeAtivo', config.criticoMoldeAtivo);
+    setChecked('criticoBlankAtivo', config.criticoBlankAtivo);
+    setChecked('criticoNeckringAtivo', config.criticoNeckringAtivo);
+    setChecked('criticoFunilAtivo', config.criticoFunilAtivo);
+    setValue('estoqueMinimoMolde', config.estoqueMinimoMolde);
+    setValue('estoqueMinimoBlank', config.estoqueMinimoBlank);
+    setValue('estoqueMinimoNeckring', config.estoqueMinimoNeckring);
+    setValue('estoqueMinimoFunil', config.estoqueMinimoFunil);
+}
+
 // ====================================================
 // SISTEMA DE LOGIN
 // ====================================================
@@ -161,26 +230,9 @@ function carregarConfiguracoes() {
     db.ref("configuracoes").once("value").then(snapshot => {
         const configSalva = snapshot.val();
         if (configSalva) {
-            config = configSalva;
-            
-            // Aplicar configurações aos checkboxes (se o painel admin existir)
-            if (document.getElementById('toggleReserva')) {
-                document.getElementById('toggleReserva').checked = config.mostrarReserva;
-                document.getElementById('toggleFunil').checked = config.mostrarFunil;
-                document.getElementById('toggleNeckring').checked = config.mostrarNeckring;
-                document.getElementById('toggleBlank').checked = config.mostrarBlank;
-                document.getElementById('toggleMolde').checked = config.mostrarMolde;
-                document.getElementById('togglePrefixo').checked = config.mostrarPrefixo;
-                document.getElementById('toggleAlertas').checked = config.alertasAtivos;
-                document.getElementById('toggleAnimacoes').checked = config.animacoesAtivas;
-                document.getElementById('autoAtualizar').checked = config.autoAtualizar;
-                document.getElementById('mostrarTotais').checked = config.mostrarTotais;
-                document.getElementById('mostrarGraficos').checked = config.mostrarGraficos;
-                document.getElementById('estoqueMinimo').value = config.estoqueMinimo;
-            }
-            
-            // Atualizar label do estoque mínimo
-            document.getElementById('estoqueMinimoLabel').textContent = config.estoqueMinimo;
+            config = normalizarConfiguracoes(configSalva);
+            aplicarConfiguracoesNoPainelAdmin();
+            atualizarResumoLimitesCriticos();
             
             // Aplicar tema
             aplicarTema(config.tema);
@@ -198,6 +250,11 @@ function carregarConfiguracoes() {
             }
             
             console.log("✅ Configurações carregadas");
+        } else {
+            config = normalizarConfiguracoes(config);
+            aplicarConfiguracoesNoPainelAdmin();
+            atualizarResumoLimitesCriticos();
+            aplicarTema(config.tema);
         }
     }).catch(error => {
         console.error("❌ Erro ao carregar configurações:", error);
@@ -245,7 +302,7 @@ function inicializarFirebaseListeners() {
             config = configSalva;
             
             // Aplicar configurações imediatamente
-            document.getElementById('estoqueMinimoLabel').textContent = config.estoqueMinimo;
+            atualizarResumoLimitesCriticos();
             
             const totaisElement = document.getElementById('totais');
             if (totaisElement) {
@@ -290,11 +347,7 @@ function criarPainel(maquinas) {
     let maquinasFiltradas = Object.entries(dadosMaquinas);
 
     if (mostrarCriticos) {
-        maquinasFiltradas = maquinasFiltradas.filter(([_, m]) =>
-            (m.molde || 0) <= config.estoqueMinimo ||
-            (m.blank || 0) <= config.estoqueMinimo ||
-            (m.funil || 0) <= config.estoqueMinimo
-        );
+        maquinasFiltradas = maquinasFiltradas.filter(([_, m]) => maquinaEstaCritica(m));
     }
 
     if (fornosAtivos.size > 0) {
@@ -313,13 +366,10 @@ function criarPainel(maquinas) {
         totalNeckRing += m.neck_ring || 0;
         totalFunil += m.funil || 0;
 
-        const alerta = config.alertasAtivos && (
-            (m.molde || 0) <= config.estoqueMinimo ||
-            (m.blank || 0) <= config.estoqueMinimo ||
-            (m.funil || 0) <= config.estoqueMinimo
-        );
+        const itensCriticos = obterItensCriticos(m);
+        const alerta = config.alertasAtivos && itensCriticos.length > 0;
 
-        if (alerta) totalCriticos++;
+        if (itensCriticos.length > 0) totalCriticos++;
 
         const maquinaAmostra = Boolean(m.amostra);
 
@@ -409,7 +459,7 @@ function criarPainel(maquinas) {
         if (alerta) {
             maquinaHTML += `
                 <div class="alert-message">
-                    <i class="fas fa-exclamation-triangle"></i> Estoque em nível crítico (≤ ${config.estoqueMinimo} peças)
+                    <i class="fas fa-exclamation-triangle"></i> Estoque crítico: ${itensCriticos.map(item => `${item.rotulo} ≤ ${item.limite}`).join(' | ')}
                 </div>`;
         }
 
@@ -1168,7 +1218,15 @@ function salvarConfiguracoes() {
     config.autoAtualizar = document.getElementById('autoAtualizar').checked;
     config.mostrarTotais = document.getElementById('mostrarTotais').checked;
     config.mostrarGraficos = document.getElementById('mostrarGraficos').checked;
-    config.estoqueMinimo = parseInt(document.getElementById('estoqueMinimo').value) || 3;
+    config.estoqueMinimoMolde = Math.max(0, parseInt(document.getElementById('estoqueMinimoMolde').value, 10) || 0);
+    config.estoqueMinimoBlank = Math.max(0, parseInt(document.getElementById('estoqueMinimoBlank').value, 10) || 0);
+    config.estoqueMinimoNeckring = Math.max(0, parseInt(document.getElementById('estoqueMinimoNeckring').value, 10) || 0);
+    config.estoqueMinimoFunil = Math.max(0, parseInt(document.getElementById('estoqueMinimoFunil').value, 10) || 0);
+    config.estoqueMinimo = Math.min(config.estoqueMinimoMolde, config.estoqueMinimoBlank, config.estoqueMinimoNeckring, config.estoqueMinimoFunil);
+    config.criticoMoldeAtivo = document.getElementById('criticoMoldeAtivo').checked;
+    config.criticoBlankAtivo = document.getElementById('criticoBlankAtivo').checked;
+    config.criticoNeckringAtivo = document.getElementById('criticoNeckringAtivo').checked;
+    config.criticoFunilAtivo = document.getElementById('criticoFunilAtivo').checked;
     
     // Salvar no Firebase
     setWithAudit("configuracoes", config, {
@@ -1188,7 +1246,7 @@ function salvarConfiguracoes() {
             graficosElement.style.display = config.mostrarGraficos ? 'grid' : 'none';
         }
         
-        document.getElementById('estoqueMinimoLabel').textContent = config.estoqueMinimo;
+        atualizarResumoLimitesCriticos();
         
         if (Object.keys(dadosMaquinas).length > 0) {
             criarPainel(dadosMaquinas);
