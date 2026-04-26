@@ -295,17 +295,37 @@
                 GRÁFICOS
                 ====================================================
                 -->
+                <div class="dashboard-visual-options" aria-label="Opções de visualização dos gráficos">
+                    <span class="dashboard-visual-title"><i class="fas fa-eye"></i> Exibir nos gráficos:</span>
+                    <label class="dashboard-toggle">
+                        <input type="checkbox" id="toggleGraficoNeckRing" onchange="atualizarVisualizacaoDashboard()">
+                        <span>Neck Ring</span>
+                    </label>
+                    <label class="dashboard-toggle">
+                        <input type="checkbox" id="toggleGraficoFunil" onchange="atualizarVisualizacaoDashboard()">
+                        <span>Funil</span>
+                    </label>
+                </div>
+
                 <section class="graficos-container">
                     <!-- Gráfico de produção atual -->
                     <div class="grafico-card">
                         <h2><i class="fas fa-chart-bar"></i> Estoque Atual por Máquina</h2>
-                        <canvas id="graficoProducao"></canvas>
+                        <div class="grafico-scroll">
+                            <div class="grafico-canvas-wide">
+                                <canvas id="graficoProducao"></canvas>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Gráfico de estoque total (máquina + reserva) -->
                     <div class="grafico-card">
                         <h2><i class="fas fa-chart-line"></i> Estoque Total (Máquina + Reserva)</h2>
-                        <canvas id="graficoTotal"></canvas>
+                        <div class="grafico-scroll">
+                            <div class="grafico-canvas-wide">
+                                <canvas id="graficoTotal"></canvas>
+                            </div>
+                        </div>
                     </div>
                 </section>
             </div>

@@ -28,6 +28,8 @@ let config = {
 // Configuração de filtro por forno
 let fornosAtivos = new Set();
 let modoCompactoAtivo = localStorage.getItem('modoCompacto') === 'true';
+let mostrarNeckRingDashboard = localStorage.getItem('mostrarNeckRingDashboard') === 'true';
+let mostrarFunilDashboard = localStorage.getItem('mostrarFunilDashboard') === 'true';
 let clicksTitulo = 0;
 let timeoutClicks = null;
 
@@ -319,10 +321,20 @@ function criarPainel(maquinas) {
 
         if (alerta) totalCriticos++;
 
+        const maquinaAmostra = Boolean(m.amostra);
+
         let maquinaHTML = `
-            <div class="maquina ${alerta ? "alerta" : ""}">
+            <div class="maquina ${alerta ? "alerta" : ""} ${maquinaAmostra ? "maquina-amostra" : ""}">
                 <div class="maquina-header">
-                    <div class="maquina-id"><i class="fas fa-industry"></i> <span class="maquina-texto">Máquina</span><span class="maquina-codigo">${id}</span></div>`;
+                    <button
+                        type="button"
+                        class="maquina-id maquina-id-clickable ${maquinaAmostra ? "ativa" : ""}"
+                        onclick="alternarMaquinaAmostra('${id}')"
+                        title="Marcar ou desmarcar ${id} como máquina amostra"
+                        aria-pressed="${maquinaAmostra}">
+                        <i class="fas fa-industry"></i>
+                        <span class="maquina-texto">Máquina</span><span class="maquina-codigo">${id}</span>
+                    </button>`;
 
         if (config.mostrarPrefixo) {
             const currentPrefixo = m.prefixo || "";
@@ -385,6 +397,13 @@ function criarPainel(maquinas) {
         if (config.mostrarFunil) {
             maquinaHTML += renderLinhaControle(id, "funil", "Funil", "fas fa-filter", "funil-bg", m.funil || 0);
             if (config.mostrarReserva) maquinaHTML += renderLinhaControle(id, "funil_reserva", "Reserva", "fas fa-warehouse", "funil-bg", m.funil_reserva || 0, true);
+        }
+
+        if (maquinaAmostra) {
+            maquinaHTML += `
+                <div class="amostra-message">
+                    <i class="fas fa-vial"></i> Máquina amostra
+                </div>`;
         }
 
         if (alerta) {
@@ -596,6 +615,34 @@ function atualizarPrefixo(maquinaId, prefixoId) {
     
     mostrarNotificacao(`Prefixo atualizado para: ${prefixoId}`, "info");
 }
+
+
+function alternarMaquinaAmostra(maquinaId) {
+    const atual = Boolean(dadosMaquinas?.[maquinaId]?.amostra);
+    const novoEstado = !atual;
+
+    if (!dadosMaquinas[maquinaId]) {
+        dadosMaquinas[maquinaId] = {};
+    }
+    dadosMaquinas[maquinaId].amostra = novoEstado;
+
+    db.ref(`maquinas/${maquinaId}/amostra`).set(novoEstado)
+        .then(() => {
+            criarPainel(dadosMaquinas);
+            mostrarNotificacao(
+                novoEstado
+                    ? `Máquina ${maquinaId} marcada como amostra.`
+                    : `Máquina ${maquinaId} removida de amostra.`,
+                "info"
+            );
+        })
+        .catch(error => {
+            dadosMaquinas[maquinaId].amostra = atual;
+            mostrarNotificacao(`Erro ao atualizar máquina amostra: ${error.message}`, "error");
+        });
+}
+
+window.alternarMaquinaAmostra = alternarMaquinaAmostra;
 
 // ====================================================
 // FUNÇÃO: FILTRAR MÁQUINAS
@@ -866,6 +913,7 @@ async function gerarPDF() {
 // ====================================================
 
 function inicializarGraficos() {
+    sincronizarControlesDashboard();
     // Inicializar gráficos vazios
     const ctxProducao = document.getElementById("graficoProducao");
     const ctxTotal = document.getElementById("graficoTotal");
@@ -917,7 +965,7 @@ function atualizarGrafico(dados) {
     const funis = maquinas.map(id => dados[id].funil || 0);
 
     graficoProducao.data.labels = maquinas;
-    graficoProducao.data.datasets = [
+    const datasets = [
         {
             label: "Molde",
             data: moldes,
@@ -931,23 +979,30 @@ function atualizarGrafico(dados) {
             backgroundColor: "rgba(12, 74, 110, 0.8)",
             borderColor: "rgba(12, 74, 110, 1)",
             borderWidth: 1
-        },
-        {
+        }
+    ];
+
+    if (mostrarNeckRingDashboard) {
+        datasets.push({
             label: "Neck Ring",
             data: neckrings,
             backgroundColor: "rgba(79, 70, 229, 0.8)",
             borderColor: "rgba(79, 70, 229, 1)",
             borderWidth: 1
-        },
-        {
+        });
+    }
+
+    if (mostrarFunilDashboard) {
+        datasets.push({
             label: "Funil",
             data: funis,
             backgroundColor: "rgba(245, 158, 11, 0.8)",
             borderColor: "rgba(245, 158, 11, 1)",
             borderWidth: 1
-        }
-    ];
-    
+        });
+    }
+
+    graficoProducao.data.datasets = datasets;    
     graficoProducao.update();
 }
 
@@ -974,7 +1029,7 @@ function atualizarGraficoTotal(dados) {
     );
 
     graficoTotal.data.labels = maquinas;
-    graficoTotal.data.datasets = [
+    const datasets = [
         {
             label: "Molde Total",
             data: moldesTotal,
@@ -988,25 +1043,57 @@ function atualizarGraficoTotal(dados) {
             backgroundColor: "rgba(12, 74, 110, 0.6)",
             borderColor: "rgba(12, 74, 110, 1)",
             borderWidth: 1
-        },
-        {
+        }
+    ];
+
+    if (mostrarNeckRingDashboard) {
+        datasets.push({
             label: "Neck Ring Total",
             data: neckringsTotal,
             backgroundColor: "rgba(79, 70, 229, 0.6)",
             borderColor: "rgba(79, 70, 229, 1)",
             borderWidth: 1
-        },
-        {
+        });
+    }
+
+    if (mostrarFunilDashboard) {
+        datasets.push({
             label: "Funil Total",
             data: funisTotal,
             backgroundColor: "rgba(245, 158, 11, 0.6)",
             borderColor: "rgba(245, 158, 11, 1)",
             borderWidth: 1
-        }
-    ];
-    
+        });
+    }
+
+    graficoTotal.data.datasets = datasets;    
     graficoTotal.update();
 }
+
+
+function sincronizarControlesDashboard() {
+    const neck = document.getElementById('toggleGraficoNeckRing');
+    const funil = document.getElementById('toggleGraficoFunil');
+
+    if (neck) neck.checked = mostrarNeckRingDashboard;
+    if (funil) funil.checked = mostrarFunilDashboard;
+}
+
+function atualizarVisualizacaoDashboard() {
+    const neck = document.getElementById('toggleGraficoNeckRing');
+    const funil = document.getElementById('toggleGraficoFunil');
+
+    mostrarNeckRingDashboard = Boolean(neck?.checked);
+    mostrarFunilDashboard = Boolean(funil?.checked);
+
+    localStorage.setItem('mostrarNeckRingDashboard', String(mostrarNeckRingDashboard));
+    localStorage.setItem('mostrarFunilDashboard', String(mostrarFunilDashboard));
+
+    atualizarGrafico(dadosMaquinas);
+    atualizarGraficoTotal(dadosMaquinas);
+}
+
+window.atualizarVisualizacaoDashboard = atualizarVisualizacaoDashboard;
 
 // ====================================================
 // PAINEL ADMINISTRATIVO
