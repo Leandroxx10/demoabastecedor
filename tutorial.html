@@ -1,487 +1,408 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Sistema | Tutorial Operacional</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="tutorial.css">
-    <meta name="theme-color" content="#0ea5e9">
-    <link rel="manifest" href="manifest.webmanifest">
-    <style>
-        .tutorial-hero p strong { color: var(--primary); }
-        .tutorial-mini-map {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(170px, 1fr));
-            gap: 12px;
-            margin-top: 22px;
-        }
-        .tutorial-mini-map div {
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 14px;
-            background: var(--bg);
-            color: var(--text);
-            font-weight: 700;
-        }
-        .tutorial-mini-map span {
-            display: block;
-            margin-top: 5px;
-            font-weight: 500;
-            opacity: .78;
-            font-size: .9rem;
-        }
-        .demo-panel-block {
-            display: grid;
-            gap: 14px;
-        }
-        .demo-filter-row,
-        .demo-dashboard-tools,
-        .demo-sample-banner {
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            background: var(--card);
-            padding: 16px;
-            box-shadow: var(--shadow-sm);
-        }
-        .demo-filter-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-        }
-        .demo-filter-row button,
-        .demo-toggle-pill,
-        .demo-chart-toggle {
-            border: 1px solid var(--border);
-            background: var(--bg);
-            color: var(--text);
-            border-radius: 12px;
-            padding: 10px 13px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-        .demo-filter-row button.selected,
-        .demo-toggle-pill.active,
-        .demo-chart-toggle.active {
-            background: var(--primary);
-            color: #fff;
-            border-color: var(--primary);
-        }
-        .demo-sample-banner {
-            display: none;
-            align-items: center;
-            gap: 10px;
-            background: rgba(250, 204, 21, .16);
-            border-color: rgba(202, 138, 4, .35);
-            color: #854d0e;
-            font-weight: 800;
-        }
-        .demo-sample-banner.visible { display: flex; }
-        .demo-machine-code {
-            display: inline-flex;
-            align-items: center;
-            border: 2px solid transparent;
-            border-radius: 10px;
-            padding: 2px 5px;
-            color: var(--accent);
-            cursor: pointer;
-            transition: .2s ease;
-        }
-        .demo-machine-code:hover,
-        .demo-machine-code.active {
-            border-color: var(--primary);
-            background: var(--primary-light);
-            color: var(--primary);
-        }
-        .demo-card.compact-demo .demo-machine .machine-word { display: none; }
-        .demo-card.compact-demo .demo-card-header { gap: 10px; }
-        .demo-card.compact-demo .demo-btn-group { display: none; }
-        .demo-card.compact-demo .demo-controls { flex-wrap: nowrap; gap: 10px; }
-        .demo-card.compact-demo .demo-line { gap: 8px; }
-        .demo-card.compact-demo .demo-value-stack { min-width: 42px; }
-        .demo-dashboard-tools {
-            display: grid;
-            gap: 12px;
-        }
-        .demo-toggle-line {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-        }
-        .demo-chart-scroll {
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            overflow-x: auto;
-            background: var(--bg);
-            padding: 12px;
-        }
-        .demo-chart-wide {
-            min-width: 760px;
-            height: 160px;
-            display: flex;
-            align-items: flex-end;
-            gap: 14px;
-            padding: 10px;
-        }
-        .demo-chart-machine {
-            display: grid;
-            justify-items: center;
-            gap: 6px;
-            min-width: 46px;
-        }
-        .demo-bars {
-            display: flex;
-            align-items: flex-end;
-            gap: 4px;
-            height: 110px;
-        }
-        .bar-molde { width: 9px; background: #0ea5e9; border-radius: 5px 5px 0 0; }
-        .bar-blank { width: 9px; background: #0f4c6a; border-radius: 5px 5px 0 0; }
-        .bar-neck { width: 9px; background: #4f46e5; border-radius: 5px 5px 0 0; display: none; }
-        .bar-funil { width: 9px; background: #f59e0b; border-radius: 5px 5px 0 0; display: none; }
-        .show-neck .bar-neck, .show-funil .bar-funil { display: block; }
-        .tutorial-extra-note {
-            margin-top: 10px;
-            padding: 14px 16px;
-            border-left: 4px solid var(--primary);
-            background: var(--primary-light);
-            border-radius: 14px;
-            color: var(--text);
-            line-height: 1.55;
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema | Tutorial Operacional</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="tutorial.css">
+  <meta name="theme-color" content="#0ea5e9">
+  <link rel="manifest" href="manifest.webmanifest">
+  <style>
+    :root {
+      --primary: #0ea5e9;
+      --primary-dark: #0284c7;
+      --primary-light: rgba(14,165,233,.12);
+      --accent: #1e293b;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #dbe5f0;
+      --success: #16a34a;
+      --error: #dc2626;
+      --warning: #ca8a04;
+      --shadow-sm: 0 8px 20px rgba(15, 23, 42, .08);
+      --shadow-md: 0 18px 45px rgba(15, 23, 42, .14);
+    }
 
-        /* Animações didáticas com sensação 3D */
-        .tutorial-stage { perspective: 1200px; }
-        .demo-panel-block { transform-style: preserve-3d; }
-        .demo-filter-row,
-        .demo-card,
-        .demo-dashboard-tools,
-        .demo-prefix-panel {
-            transform-style: preserve-3d;
-            transition: transform .45s cubic-bezier(.2,.8,.2,1), box-shadow .45s ease, border-color .45s ease;
-        }
-        .is-3d-focus {
-            transform: translateZ(34px) rotateX(2deg) rotateY(-2deg) scale(1.015);
-            box-shadow: 0 26px 60px rgba(15, 23, 42, .18), 0 10px 22px rgba(14, 165, 233, .14) !important;
-            border-color: rgba(14, 165, 233, .55) !important;
-        }
-        .is-3d-lift { animation: lift3d 1.35s ease-in-out infinite alternate; }
-        .is-3d-flip { animation: flip3d .85s cubic-bezier(.2,.8,.2,1); }
-        .is-3d-slide { animation: slide3d 1.05s cubic-bezier(.2,.8,.2,1); }
-        .is-3d-pop { animation: pop3d .8s cubic-bezier(.2,.8,.2,1); }
-        .spotlight-ring {
-            transform: translateZ(60px);
-            box-shadow: 0 0 0 9999px rgba(15, 23, 42, .05), 0 18px 40px rgba(14, 165, 233, .2);
-        }
-        @keyframes lift3d {
-            from { transform: translateZ(18px) rotateX(1deg) rotateY(-1deg); }
-            to { transform: translateZ(46px) rotateX(4deg) rotateY(-4deg); }
-        }
-        @keyframes flip3d {
-            0% { transform: rotateY(-16deg) translateZ(0) scale(.98); opacity: .88; }
-            60% { transform: rotateY(8deg) translateZ(44px) scale(1.02); opacity: 1; }
-            100% { transform: rotateY(0) translateZ(26px) scale(1); }
-        }
-        @keyframes slide3d {
-            0% { transform: translateX(0) translateZ(0); }
-            45% { transform: translateX(-34px) translateZ(38px) rotateY(4deg); }
-            100% { transform: translateX(0) translateZ(20px); }
-        }
-        @keyframes pop3d {
-            0% { transform: translateZ(0) scale(.94); }
-            55% { transform: translateZ(54px) scale(1.06); }
-            100% { transform: translateZ(24px) scale(1); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-            .is-3d-lift, .is-3d-flip, .is-3d-slide, .is-3d-pop { animation: none; }
-            .is-3d-focus { transform: none; }
-        }
+    * { box-sizing: border-box; }
+    body.tutorial-page {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at 20% 0%, rgba(14,165,233,.16), transparent 28%), linear-gradient(135deg, #f8fafc, #eef7ff);
+    }
 
-        @media (max-width: 960px) {
-            .tutorial-mini-map { grid-template-columns: 1fr 1fr; }
-        }
-        @media (max-width: 640px) {
-            .tutorial-mini-map { grid-template-columns: 1fr; }
-            .demo-card-header, .demo-line { align-items: stretch; flex-direction: column; }
-            .demo-controls { justify-content: flex-start; }
-        }
-    </style>
+    .background-shapes { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+    .shape { position: absolute; border-radius: 999px; filter: blur(4px); opacity: .35; }
+    .shape-1 { width: 320px; height: 320px; background: #bae6fd; left: -80px; top: -90px; }
+    .shape-2 { width: 260px; height: 260px; background: #dbeafe; right: -80px; top: 18%; }
+    .shape-3 { width: 220px; height: 220px; background: #e0f2fe; left: 55%; bottom: -100px; }
+
+    .tutorial-shell { position: relative; z-index: 1; width: min(1280px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 40px; }
+    .tutorial-hero, .tutorial-layout, .tutorial-stage-section, .tutorial-sidebar {
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: rgba(255,255,255,.92);
+      box-shadow: var(--shadow-sm);
+    }
+    .tutorial-hero { padding: 30px; margin-bottom: 22px; }
+    .tutorial-badge { display: inline-flex; gap: 8px; align-items: center; padding: 9px 13px; border-radius: 999px; color: var(--primary-dark); background: var(--primary-light); font-weight: 800; }
+    .tutorial-hero h1 { margin: 18px 0 10px; font-size: clamp(2rem, 4vw, 3.6rem); line-height: 1.05; }
+    .tutorial-hero p { max-width: 980px; color: var(--muted); font-size: 1.08rem; line-height: 1.65; }
+    .tutorial-mini-map { display: grid; grid-template-columns: repeat(4, minmax(170px, 1fr)); gap: 12px; margin-top: 22px; }
+    .tutorial-mini-map div { border: 1px solid var(--border); border-radius: 16px; padding: 14px; background: var(--bg); font-weight: 800; }
+    .tutorial-mini-map span { display: block; margin-top: 5px; font-weight: 500; opacity: .78; font-size: .9rem; line-height: 1.45; }
+    .tutorial-hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
+    .tutorial-hero-actions button, .tutorial-nav-inline button, .arrow-shortcuts button {
+      border: 1px solid var(--border); border-radius: 14px; padding: 12px 16px; font-weight: 900; cursor: pointer; background: #fff; color: var(--text); transition: .2s ease;
+    }
+    .tutorial-hero-actions .primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .tutorial-hero-actions button:hover, .tutorial-nav-inline button:hover, .arrow-shortcuts button:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+
+    .tutorial-layout { display: grid; grid-template-columns: 280px 1fr; gap: 18px; padding: 18px; }
+    .tutorial-sidebar { padding: 18px; align-self: start; position: sticky; top: 16px; }
+    .tutorial-sidebar h2 { margin: 0 0 12px; }
+    .tutorial-progress { height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
+    .tutorial-progress span { display: block; height: 100%; width: 0; background: var(--primary); border-radius: inherit; transition: width .25s ease; }
+    #tutorialStepsList { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
+    #tutorialStepsList li { padding: 9px 10px; border-radius: 12px; cursor: pointer; color: var(--muted); font-weight: 750; }
+    #tutorialStepsList li.active { color: var(--primary-dark); background: var(--primary-light); }
+
+    .tutorial-stage-section { padding: 22px; overflow: hidden; }
+    .tutorial-stage-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
+    .tutorial-step-label { color: var(--primary-dark); font-weight: 900; }
+    .tutorial-stage-header h2 { margin: 4px 0 0; font-size: clamp(1.55rem, 3vw, 2.2rem); }
+    .tutorial-nav-inline { display: flex; gap: 8px; }
+    .tutorial-description { color: var(--muted); font-size: 1.05rem; line-height: 1.65; }
+    .tutorial-callout, .tutorial-extra-note { margin: 12px 0; padding: 14px 16px; border-radius: 16px; line-height: 1.55; }
+    .tutorial-callout { border: 1px solid rgba(14,165,233,.35); background: var(--primary-light); font-weight: 750; }
+    .tutorial-extra-note { border-left: 4px solid var(--primary); background: #f8fafc; color: var(--muted); }
+
+    .arrow-shortcuts { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; margin: 14px 0 18px; padding: 14px; border: 1px dashed rgba(14,165,233,.4); border-radius: 18px; background: rgba(240,249,255,.75); }
+    .arrow-shortcuts .hint { color: var(--muted); font-weight: 750; line-height: 1.45; }
+    .arrow-pad { display: grid; grid-template-columns: repeat(3, 42px); grid-template-rows: repeat(2, 42px); gap: 6px; justify-content: center; }
+    .arrow-pad button { padding: 0; border-radius: 12px; }
+    .arrow-pad .up { grid-column: 2; }
+    .arrow-pad .left { grid-column: 1; grid-row: 2; }
+    .arrow-pad .down { grid-column: 2; grid-row: 2; }
+    .arrow-pad .right { grid-column: 3; grid-row: 2; }
+    .arrow-pad button.active-flash { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    .tutorial-stage { position: relative; min-height: 520px; padding: 18px; border: 1px solid var(--border); border-radius: 22px; background: linear-gradient(180deg,#fff,#f8fafc); overflow: hidden; }
+    .demo-panel-block { display: grid; gap: 14px; }
+    .demo-filter-row, .demo-card, .demo-dashboard-tools, .demo-prefix-panel { border: 1px solid var(--border); border-radius: 18px; background: var(--card); padding: 16px; box-shadow: var(--shadow-sm); }
+    .demo-filter-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .demo-filter-row button, .demo-toggle-pill, .demo-chart-toggle, .demo-prefix-chip, .demo-keyboard-btn, .demo-btn-group button {
+      border: 1px solid var(--border); background: var(--bg); color: var(--text); border-radius: 12px; padding: 10px 13px; font-weight: 900; cursor: pointer;
+    }
+    .demo-filter-row button.selected, .demo-toggle-pill.active, .demo-chart-toggle.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .demo-card-header { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+    .demo-machine { display: inline-flex; align-items: center; gap: 8px; font-size: 1.55rem; font-weight: 950; }
+    .demo-machine-code { display: inline-flex; align-items: center; border: 2px solid transparent; border-radius: 10px; padding: 2px 5px; color: var(--accent); cursor: pointer; transition: .2s ease; }
+    .demo-machine-code:hover, .demo-machine-code.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary-dark); }
+    .demo-card.compact-demo .machine-word { display: none; }
+    .demo-card.compact-demo .demo-btn-group { display: none; }
+    .demo-card.compact-demo .demo-controls { justify-content: flex-end; gap: 12px; }
+    .demo-card.compact-demo .demo-line { grid-template-columns: auto 70px 50px; }
+    .demo-sample-banner { display: none; margin-top: 14px; align-items: center; gap: 10px; background: rgba(250, 204, 21, .16); border: 1px solid rgba(202, 138, 4, .35); border-radius: 16px; padding: 14px 16px; color: #854d0e; font-weight: 900; }
+    .demo-sample-banner.visible { display: flex; }
+    .demo-line { display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: 14px; margin-top: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 16px; background: #f8fafc; }
+    .demo-label { font-size: 1.2rem; font-weight: 900; display: inline-flex; gap: 8px; align-items: center; }
+    .demo-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .demo-btn-group { display: grid; grid-template-columns: repeat(2, 62px); gap: 6px; }
+    .demo-btn-group button { color: #fff; background: var(--primary); border-color: var(--primary); padding: 9px; }
+    #demoRemoveGroup button { background: #0f4c6a; border-color: #0f4c6a; }
+    .demo-value-stack { min-width: 64px; text-align: center; }
+    .demo-value { display: block; font-size: 1.8rem; font-weight: 950; color: var(--accent); }
+    .demo-input { display: none; width: 70px; padding: 10px; border: 2px solid var(--primary); border-radius: 12px; font-size: 1.1rem; font-weight: 900; text-align: center; }
+    .demo-keyboard-btn { min-width: 54px; background: #e2e8f0; }
+    .demo-prefix-panel { display: none; margin-top: 14px; }
+    .demo-prefix-panel.visible { display: block; }
+    .demo-prefix-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .demo-prefix-grid div { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 12px; }
+    .demo-prefix-grid strong { display: block; margin-bottom: 4px; }
+    .demo-prefix-grid span { color: var(--primary-dark); font-weight: 900; }
+
+    .demo-dashboard-tools { display: grid; gap: 12px; }
+    .demo-toggle-line { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .demo-chart-scroll { border: 1px solid var(--border); border-radius: 16px; overflow-x: auto; background: var(--bg); padding: 12px; scroll-behavior: smooth; }
+    .demo-chart-wide { min-width: 960px; height: 180px; display: flex; align-items: flex-end; gap: 18px; padding: 12px; }
+    .demo-chart-machine { display: grid; justify-items: center; gap: 6px; min-width: 54px; }
+    .demo-bars { display: flex; align-items: flex-end; gap: 4px; height: 125px; }
+    .bar-molde, .bar-blank, .bar-neck, .bar-funil { width: 10px; border-radius: 6px 6px 0 0; }
+    .bar-molde { background: #0ea5e9; }
+    .bar-blank { background: #0f4c6a; }
+    .bar-neck { background: #4f46e5; display: none; }
+    .bar-funil { background: #f59e0b; display: none; }
+    .show-neck .bar-neck, .show-funil .bar-funil { display: block; }
+
+    .guide-cursor { position: absolute; z-index: 8; width: 36px; height: 36px; border-radius: 999px; background: rgba(14,165,233,.18); border: 2px solid var(--primary); display: grid; place-items: center; color: var(--primary-dark); pointer-events: none; opacity: 0; transform: translate(-50%, -50%); transition: left .35s ease, top .35s ease, opacity .2s ease; box-shadow: 0 12px 26px rgba(14,165,233,.25); }
+    .guide-cursor::after { content: ''; position: absolute; width: 58px; height: 58px; border: 2px solid rgba(14,165,233,.32); border-radius: 999px; animation: ripple 1.2s ease infinite; }
+    .step-caption { position: absolute; z-index: 7; max-width: 330px; padding: 13px 15px; border-radius: 16px; background: #0f172a; color: #fff; font-weight: 800; line-height: 1.45; box-shadow: var(--shadow-md); opacity: 0; transform: translateY(8px); transition: .25s ease; }
+    .step-caption.visible { opacity: 1; transform: translateY(0); }
+    .focus-target { outline: 3px solid rgba(14,165,233,.75); outline-offset: 5px; box-shadow: 0 0 0 9999px rgba(15,23,42,.04), var(--shadow-md) !important; }
+    .motion-click { animation: clickPress .7s ease; }
+    .motion-slide-x { animation: slideX 1.2s ease; }
+    .motion-pop { animation: popClean .65s ease; }
+    .bounce-soft { animation: bounceSoft .55s ease; }
+    .shake-soft { animation: shakeSoft .45s ease; }
+
+    @keyframes ripple { from { transform: scale(.7); opacity: 1; } to { transform: scale(1.25); opacity: 0; } }
+    @keyframes clickPress { 0%,100% { transform: scale(1); } 45% { transform: scale(.94); } }
+    @keyframes slideX { 0% { transform: translateX(0); } 50% { transform: translateX(-80px); } 100% { transform: translateX(0); } }
+    @keyframes popClean { 0% { transform: scale(.96); opacity: .6; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); } }
+    @keyframes bounceSoft { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    @keyframes shakeSoft { 0%,100% { transform: translateX(0); } 30% { transform: translateX(-5px); } 70% { transform: translateX(5px); } }
+
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+    @media (max-width: 960px) { .tutorial-layout { grid-template-columns: 1fr; } .tutorial-sidebar { position: static; } .tutorial-mini-map { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 640px) { .tutorial-shell { width: min(100% - 16px, 1280px); } .tutorial-hero, .tutorial-stage-section { padding: 18px; } .tutorial-mini-map { grid-template-columns: 1fr; } .arrow-shortcuts { grid-template-columns: 1fr; } .demo-card-header, .demo-controls { flex-direction: column; align-items: stretch; } .demo-line, .demo-card.compact-demo .demo-line { grid-template-columns: 1fr; } .demo-prefix-grid { grid-template-columns: 1fr; } }
+  </style>
 </head>
 <body class="tutorial-page">
-    <div class="background-shapes">
-        <div class="shape shape-1"></div>
-        <div class="shape shape-2"></div>
-        <div class="shape shape-3"></div>
-    </div>
+  <div class="background-shapes"><div class="shape shape-1"></div><div class="shape shape-2"></div><div class="shape shape-3"></div></div>
 
-    <main class="tutorial-shell">
-        <section class="tutorial-hero">
-            <div class="tutorial-badge"><i class="fas fa-graduation-cap"></i> Tutorial Operacional</div>
-            <h1>Como usar o sistema no dia a dia</h1>
-            <p>Este guia ensina, passo a passo, como filtrar um ou vários fornos, usar o modo compacto, fazer apontamentos, consultar prefixos, marcar máquina como amostra, interpretar o dashboard com animações em 3D e operar com segurança mesmo sem experiência prévia neste sistema.</p>
-            <div class="tutorial-mini-map">
-                <div><i class="fas fa-filter"></i> Filtros<span>Selecione um ou vários fornos ao mesmo tempo.</span></div>
-                <div><i class="fas fa-compress-arrows-alt"></i> Modo compacto<span>Reduz o card e deixa somente o essencial visível.</span></div>
-                <div><i class="fas fa-keyboard"></i> Apontamento<span>Use botões rápidos ou teclado para corrigir valores.</span></div>
-                <div><i class="fas fa-chart-column"></i> Dashboard<span>Role horizontalmente e escolha quais séries visualizar.</span></div>
+  <main class="tutorial-shell">
+    <section class="tutorial-hero">
+      <div class="tutorial-badge"><i class="fas fa-graduation-cap"></i> Tutorial Operacional</div>
+      <h1>Como usar o sistema no dia a dia</h1>
+      <p>Este guia ensina o uso do sistema passo a passo, de forma simples para quem nunca operou a tela. As animações abaixo simulam cliques, seleção de filtros, modo compacto, apontamentos, marcação de amostra e leitura do dashboard.</p>
+      <div class="tutorial-mini-map">
+        <div><i class="fas fa-filter"></i> Filtros<span>Selecione um ou vários fornos ao mesmo tempo.</span></div>
+        <div><i class="fas fa-compress-arrows-alt"></i> Modo compacto<span>Reduz o cartão e deixa somente o essencial visível.</span></div>
+        <div><i class="fas fa-vial"></i> Máquina amostra<span>Clique no código da máquina para destacar o aviso.</span></div>
+        <div><i class="fas fa-chart-column"></i> Dashboard<span>Role o gráfico e escolha quais itens visualizar.</span></div>
+      </div>
+      <div class="tutorial-hero-actions">
+        <button class="primary" id="startTutorialBtn"><i class="fas fa-play"></i> Iniciar tutorial</button>
+        <button class="tutorial-ghost" onclick="window.location.href='index.html'"><i class="fas fa-arrow-left"></i> Voltar ao painel</button>
+      </div>
+    </section>
+
+    <section class="tutorial-layout">
+      <aside class="tutorial-sidebar">
+        <h2>Etapas</h2>
+        <div class="tutorial-progress"><span id="tutorialProgressBar"></span></div>
+        <ol id="tutorialStepsList">
+          <li class="active" data-step="0">Visão geral</li>
+          <li data-step="1">Filtro multi-select</li>
+          <li data-step="2">Limpar filtros</li>
+          <li data-step="3">Modo compacto</li>
+          <li data-step="4">Máquina amostra</li>
+          <li data-step="5">Adicionar quantidades</li>
+          <li data-step="6">Remover quantidades</li>
+          <li data-step="7">Digitação direta</li>
+          <li data-step="8">Consultar prefixo</li>
+          <li data-step="9">Dashboard com scroll</li>
+          <li data-step="10">Itens do gráfico</li>
+          <li data-step="11">Rotina segura</li>
+        </ol>
+      </aside>
+
+      <section class="tutorial-stage-section">
+        <div class="tutorial-stage-header">
+          <div>
+            <span class="tutorial-step-label" id="tutorialStepLabel">Etapa 1</span>
+            <h2 id="tutorialStepTitle">Visão geral</h2>
+          </div>
+          <div class="tutorial-nav-inline">
+            <button id="prevStepBtn" aria-label="Etapa anterior"><i class="fas fa-chevron-left"></i></button>
+            <button id="nextStepBtn" aria-label="Próxima etapa"><i class="fas fa-chevron-right"></i></button>
+          </div>
+        </div>
+
+        <p id="tutorialStepDescription" class="tutorial-description"></p>
+        <div class="tutorial-callout" id="tutorialCallout"></div>
+        <div class="tutorial-extra-note" id="tutorialExtraNote"></div>
+
+        <div class="arrow-shortcuts">
+          <div class="hint"><strong>Atalhos por seta:</strong><br>Use ← ou ↑ para voltar. Use → ou ↓ para avançar.</div>
+          <div class="arrow-pad" aria-label="Atalhos de navegação do tutorial">
+            <button class="up" id="arrowUp" title="Voltar"><i class="fas fa-arrow-up"></i></button>
+            <button class="left" id="arrowLeft" title="Voltar"><i class="fas fa-arrow-left"></i></button>
+            <button class="down" id="arrowDown" title="Avançar"><i class="fas fa-arrow-down"></i></button>
+            <button class="right" id="arrowRight" title="Avançar"><i class="fas fa-arrow-right"></i></button>
+          </div>
+          <div class="hint">As setas da tela funcionam como botões. As setas do teclado também funcionam.</div>
+        </div>
+
+        <div class="tutorial-stage" id="tutorialStage">
+          <div class="guide-cursor" id="guideCursor"><i class="fas fa-hand-pointer"></i></div>
+          <div class="step-caption" id="stepCaption"></div>
+
+          <div class="demo-panel-block">
+            <div class="demo-filter-row" id="demoFilterRow">
+              <button id="demoAllFurnaces"><i class="fas fa-layer-group"></i> Todos os Fornos</button>
+              <button id="demoFurnaceA" class="selected"><i class="fas fa-fire"></i> Forno A (A1-A6)</button>
+              <button id="demoFurnaceB"><i class="fas fa-fire"></i> Forno B (B1-B8)</button>
+              <button id="demoFurnaceC"><i class="fas fa-fire"></i> Forno C (C1-C8)</button>
+              <button id="demoFurnaceD"><i class="fas fa-fire"></i> Forno D (D10-D15)</button>
             </div>
-            <div class="tutorial-hero-actions">
-                <button class="primary" id="startTutorialBtn"><i class="fas fa-play"></i> Iniciar tutorial</button>
-                <button class="tutorial-ghost" onclick="window.location.href='index.html'"><i class="fas fa-arrow-left"></i> Voltar ao painel</button>
+
+            <div class="demo-card" id="demoCard">
+              <div class="demo-card-header" id="demoHeader">
+                <div class="demo-machine" id="demoMachineTitle">
+                  <i class="fas fa-industry"></i>
+                  <span class="machine-word">Máquina</span>
+                  <span class="demo-machine-code" id="demoMachineCode">A3</span>
+                </div>
+                <button class="demo-prefix-chip" id="demoPrefixChip"><i class="fas fa-tag"></i> PX-410-15</button>
+              </div>
+
+              <div class="demo-sample-banner" id="demoSampleBanner">
+                <i class="fas fa-vial-circle-check"></i>
+                Máquina marcada como AMOSTRA. Verifique a orientação da equipe antes de alterar valores.
+              </div>
+
+              <div class="demo-line" id="demoLineMolde">
+                <span class="demo-label"><i class="fas fa-cube"></i> Molde</span>
+                <div class="demo-controls">
+                  <div class="demo-btn-group" id="demoRemoveGroup">
+                    <button>-10</button><button>-5</button><button>-2</button><button>-1</button>
+                  </div>
+                  <div class="demo-value-stack">
+                    <span class="demo-value" id="demoValue">12</span>
+                    <input class="demo-input" id="demoInput" type="number" value="12" />
+                  </div>
+                  <div class="demo-btn-group" id="demoAddGroup">
+                    <button>+1</button><button>+2</button><button>+5</button><button>+10</button>
+                  </div>
+                  <button class="demo-keyboard-btn" id="demoKeyboardBtn"><i class="fas fa-keyboard"></i></button>
+                </div>
+              </div>
+
+              <div class="demo-prefix-panel" id="demoPrefixPanel">
+                <div class="demo-prefix-grid">
+                  <div><strong>Processo</strong><span>DG</span></div>
+                  <div><strong>Corredor</strong><span>07</span></div>
+                  <div><strong>Prateleira</strong><span>P3</span></div>
+                  <div><strong>Neck Ring</strong><span>FE-15</span></div>
+                  <div><strong>Blank</strong><span>BK-220</span></div>
+                  <div><strong>Molde</strong><span>MD-440</span></div>
+                </div>
+              </div>
             </div>
-        </section>
 
-        <section class="tutorial-layout">
-            <aside class="tutorial-sidebar">
-                <h2>Etapas</h2>
-                <div class="tutorial-progress"><span id="tutorialProgressBar"></span></div>
-                <ol id="tutorialStepsList">
-                    <li class="active" data-step="0">Visão geral</li>
-                    <li data-step="1">Filtro multi-select</li>
-                    <li data-step="2">Limpar filtros</li>
-                    <li data-step="3">Modo compacto</li>
-                    <li data-step="4">Identificação e amostra</li>
-                    <li data-step="5">Adicionar quantidades</li>
-                    <li data-step="6">Remover quantidades</li>
-                    <li data-step="7">Digitação direta</li>
-                    <li data-step="8">Consultar prefixo</li>
-                    <li data-step="9">Dashboard com rolagem</li>
-                    <li data-step="10">Molde, Blank, Neck e Funil</li>
-                    <li data-step="11">Boas práticas</li>
-                </ol>
-            </aside>
-
-            <section class="tutorial-stage-section">
-                <div class="tutorial-stage-header">
-                    <div>
-                        <span class="tutorial-step-label" id="tutorialStepLabel">Etapa 1</span>
-                        <h2 id="tutorialStepTitle">Visão geral</h2>
-                    </div>
-                    <div class="tutorial-nav-inline">
-                        <button id="prevStepBtn" aria-label="Etapa anterior"><i class="fas fa-chevron-left"></i></button>
-                        <button id="nextStepBtn" aria-label="Próxima etapa"><i class="fas fa-chevron-right"></i></button>
-                    </div>
+            <div class="demo-dashboard-tools" id="demoDashboardTools">
+              <div class="demo-toggle-line">
+                <button class="demo-toggle-pill active" id="demoMoldeToggle">Molde visível</button>
+                <button class="demo-toggle-pill active" id="demoBlankToggle">Blank visível</button>
+                <button class="demo-chart-toggle" id="demoNeckToggle">Mostrar Neck Ring</button>
+                <button class="demo-chart-toggle" id="demoFunilToggle">Mostrar Funil</button>
+              </div>
+              <div class="demo-chart-scroll" id="demoChartScroll">
+                <div class="demo-chart-wide" id="demoChartWide">
+                  <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:62px"></span><span class="bar-blank" style="height:48px"></span><span class="bar-neck" style="height:80px"></span><span class="bar-funil" style="height:24px"></span></div><small>A1</small></div>
+                  <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:45px"></span><span class="bar-blank" style="height:55px"></span><span class="bar-neck" style="height:70px"></span><span class="bar-funil" style="height:28px"></span></div><small>A2</small></div>
+                  <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:74px"></span><span class="bar-blank" style="height:58px"></span><span class="bar-neck" style="height:35px"></span><span class="bar-funil" style="height:42px"></span></div><small>A3</small></div>
+                  <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:38px"></span><span class="bar-blank" style="height:65px"></span><span class="bar-neck" style="height:92px"></span><span class="bar-funil" style="height:36px"></span></div><small>B1</small></div>
+                  <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:52px"></span><span class="bar-blank" style="height:40px"></span><span class="bar-neck" style="height:50px"></span><span class="bar-funil" style="height:20px"></span></div><small>B2</small></div>
+                  <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:85px"></span><span class="bar-blank" style="height:72px"></span><span class="bar-neck" style="height:60px"></span><span class="bar-funil" style="height:44px"></span></div><small>B3</small></div>
+                  <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:30px"></span><span class="bar-blank" style="height:48px"></span><span class="bar-neck" style="height:78px"></span><span class="bar-funil" style="height:30px"></span></div><small>C1</small></div>
+                  <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:68px"></span><span class="bar-blank" style="height:56px"></span><span class="bar-neck" style="height:45px"></span><span class="bar-funil" style="height:52px"></span></div><small>C2</small></div>
+                  <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:92px"></span><span class="bar-blank" style="height:95px"></span><span class="bar-neck" style="height:70px"></span><span class="bar-funil" style="height:22px"></span></div><small>C3</small></div>
+                  <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:46px"></span><span class="bar-blank" style="height:44px"></span><span class="bar-neck" style="height:58px"></span><span class="bar-funil" style="height:34px"></span></div><small>D10</small></div>
+                  <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:76px"></span><span class="bar-blank" style="height:64px"></span><span class="bar-neck" style="height:48px"></span><span class="bar-funil" style="height:45px"></span></div><small>D11</small></div>
+                  <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:55px"></span><span class="bar-blank" style="height:70px"></span><span class="bar-neck" style="height:82px"></span><span class="bar-funil" style="height:38px"></span></div><small>D12</small></div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
 
-                <p id="tutorialStepDescription" class="tutorial-description"></p>
-
-                <div class="tutorial-stage" id="tutorialStage">
-                    <div class="spotlight-ring" id="spotlightRing"></div>
-
-                    <div class="demo-panel-block">
-                        <div class="demo-filter-row" id="demoFilterRow">
-                            <button id="demoAllFurnaces"><i class="fas fa-layer-group"></i> Todos os Fornos</button>
-                            <button id="demoFurnaceA" class="selected"><i class="fas fa-fire"></i> Forno A (A1-A6)</button>
-                            <button id="demoFurnaceB"><i class="fas fa-fire"></i> Forno B (B1-B8)</button>
-                            <button id="demoFurnaceC"><i class="fas fa-fire"></i> Forno C (C1-C8)</button>
-                            <button id="demoFurnaceD"><i class="fas fa-fire"></i> Forno D (D10-D15)</button>
-                        </div>
-
-                        <div class="demo-card" id="demoCard">
-                            <div class="demo-card-header" id="demoHeader">
-                                <div class="demo-machine" id="demoMachineTitle">
-                                    <i class="fas fa-industry"></i>
-                                    <span class="machine-word">Máquina</span>
-                                    <span class="demo-machine-code" id="demoMachineCode">A3</span>
-                                </div>
-                                <button class="demo-prefix-chip" id="demoPrefixChip"><i class="fas fa-tag"></i> PX-410-15</button>
-                            </div>
-
-                            <div class="demo-sample-banner" id="demoSampleBanner">
-                                <i class="fas fa-vial-circle-check"></i>
-                                Máquina marcada como AMOSTRA. Tenha atenção: esta identificação serve para avisar a equipe antes de qualquer apontamento.
-                            </div>
-
-                            <div class="demo-line" id="demoLineMolde">
-                                <span class="demo-label"><i class="fas fa-cube"></i> Molde</span>
-                                <div class="demo-controls">
-                                    <div class="demo-btn-group" id="demoRemoveGroup">
-                                        <button>-10</button><button>-5</button><button>-2</button><button>-1</button>
-                                    </div>
-                                    <div class="demo-value-stack">
-                                        <span class="demo-value" id="demoValue">12</span>
-                                        <input class="demo-input" id="demoInput" type="number" value="12"/>
-                                    </div>
-                                    <div class="demo-btn-group" id="demoAddGroup">
-                                        <button>+1</button><button>+2</button><button>+5</button><button>+10</button>
-                                    </div>
-                                    <button class="demo-keyboard-btn" id="demoKeyboardBtn"><i class="fas fa-keyboard"></i></button>
-                                </div>
-                            </div>
-
-                            <div class="demo-prefix-panel" id="demoPrefixPanel">
-                                <div class="demo-prefix-grid">
-                                    <div><strong>Processo</strong><span>DG</span></div>
-                                    <div><strong>Corredor</strong><span>07</span></div>
-                                    <div><strong>Prateleira</strong><span>P3</span></div>
-                                    <div><strong>Neck Ring</strong><span>FE-15</span></div>
-                                    <div><strong>Blank</strong><span>BK-220</span></div>
-                                    <div><strong>Molde</strong><span>MD-440</span></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="demo-dashboard-tools" id="demoDashboardTools">
-                            <div class="demo-toggle-line">
-                                <button class="demo-toggle-pill active" id="demoMoldeToggle">Molde visível</button>
-                                <button class="demo-toggle-pill active" id="demoBlankToggle">Blank visível</button>
-                                <button class="demo-chart-toggle" id="demoNeckToggle">Mostrar Neck Ring</button>
-                                <button class="demo-chart-toggle" id="demoFunilToggle">Mostrar Funil</button>
-                            </div>
-                            <div class="demo-chart-scroll" id="demoChartScroll">
-                                <div class="demo-chart-wide" id="demoChartWide">
-                                    <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:62px"></span><span class="bar-blank" style="height:48px"></span><span class="bar-neck" style="height:80px"></span><span class="bar-funil" style="height:24px"></span></div><small>A1</small></div>
-                                    <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:45px"></span><span class="bar-blank" style="height:55px"></span><span class="bar-neck" style="height:70px"></span><span class="bar-funil" style="height:28px"></span></div><small>A2</small></div>
-                                    <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:74px"></span><span class="bar-blank" style="height:58px"></span><span class="bar-neck" style="height:35px"></span><span class="bar-funil" style="height:42px"></span></div><small>A3</small></div>
-                                    <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:38px"></span><span class="bar-blank" style="height:65px"></span><span class="bar-neck" style="height:92px"></span><span class="bar-funil" style="height:36px"></span></div><small>B1</small></div>
-                                    <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:52px"></span><span class="bar-blank" style="height:40px"></span><span class="bar-neck" style="height:50px"></span><span class="bar-funil" style="height:20px"></span></div><small>B2</small></div>
-                                    <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:85px"></span><span class="bar-blank" style="height:72px"></span><span class="bar-neck" style="height:60px"></span><span class="bar-funil" style="height:44px"></span></div><small>B3</small></div>
-                                    <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:60px"></span><span class="bar-blank" style="height:48px"></span><span class="bar-neck" style="height:78px"></span><span class="bar-funil" style="height:30px"></span></div><small>C1</small></div>
-                                    <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:95px"></span><span class="bar-blank" style="height:100px"></span><span class="bar-neck" style="height:40px"></span><span class="bar-funil" style="height:54px"></span></div><small>C2</small></div>
-                                    <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:50px"></span><span class="bar-blank" style="height:68px"></span><span class="bar-neck" style="height:86px"></span><span class="bar-funil" style="height:26px"></span></div><small>D10</small></div>
-                                    <div class="demo-chart-machine"><div class="demo-bars"><span class="bar-molde" style="height:42px"></span><span class="bar-blank" style="height:52px"></span><span class="bar-neck" style="height:74px"></span><span class="bar-funil" style="height:32px"></span></div><small>D11</small></div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-                <div class="tutorial-callout" id="tutorialCallout">
-                    Observe a área destacada. O tutorial mantém foco no elemento em uso para reduzir erro operacional.
-                </div>
-                <div class="tutorial-extra-note" id="tutorialExtraNote">
-                    Dica: sempre confira a máquina e o prefixo antes de alterar qualquer valor.
-                </div>
-            </section>
-        </section>
-    </main>
-
-    <script>
-    (function () {
+  <script>
+    (() => {
       const steps = [
         {
-          label: 'Etapa 1',
-          title: 'Visão geral do painel',
-          description: 'O sistema é dividido em filtros de forno, cartões de máquina e dashboard. Primeiro escolha um ou mais fornos, depois localize a máquina e só então faça o apontamento. Cada cartão mostra identificação da máquina, prefixo, valores de estoque e botão de teclado.',
-          callout: 'Comece sempre identificando a máquina correta. No exemplo, o cartão é da máquina A3 e o prefixo atual é PX-410-15.',
-          note: 'Para quem nunca usou o sistema: pense em cada cartão como uma ficha da máquina. Tudo que você altera naquele cartão pertence apenas àquela máquina.',
-          target: '#demoHeader',
-          action: () => { resetDemo(); pulse('#demoHeader'); }
+          label: 'Etapa 1', title: 'Visão geral', target: '#demoCard', caption: 'Este é um cartão de máquina. Aqui ficam a identificação, o prefixo e os valores.',
+          description: 'A tela principal do sistema é dividida em filtros de forno, cartões de máquinas e dashboard. Primeiro escolha o forno, depois localize a máquina e confira os valores antes de alterar qualquer quantidade.',
+          callout: 'Leia sempre de cima para baixo: filtros, máquina, prefixo, item e valor.',
+          note: 'Nesta simulação, a mão azul mostra exatamente onde clicar ou olhar em cada etapa.',
+          action: () => { resetDemo(); setFurnaces(['demoFurnaceA']); focus('#demoCard'); }
         },
         {
-          label: 'Etapa 2',
-          title: 'Filtro multi-select de fornos',
-          description: 'Os filtros de forno agora aceitam mais de uma seleção. Clique em Forno A, Forno B, Forno C ou Forno D para marcar ou desmarcar cada grupo. Quando dois ou mais filtros ficam ativos, o painel mostra as máquinas pertencentes a todos os fornos selecionados.',
-          callout: 'Exemplo: Forno A e Forno B podem ficar selecionados ao mesmo tempo. Isso ajuda a comparar áreas sem precisar ir e voltar várias vezes.',
-          note: 'Botão azul significa selecionado. Botão claro significa não selecionado. Clique novamente no mesmo forno para remover aquele forno da visualização.',
-          target: '#demoFilterRow',
-          action: () => { resetDemo(); setFurnaces(['demoFurnaceA','demoFurnaceB']); pulse('#demoFilterRow'); document.querySelector('#demoFilterRow').classList.add('is-3d-flip'); }
+          label: 'Etapa 2', title: 'Filtro multi-select', target: '#demoFurnaceB', caption: 'Clique em mais de um forno para visualizar máquinas de vários grupos ao mesmo tempo.',
+          description: 'O filtro de fornos permite selecionar mais de um forno ao mesmo tempo. Exemplo: você pode manter Forno A selecionado e clicar no Forno B para ver as máquinas dos dois grupos.',
+          callout: 'Botão azul significa selecionado. Botão claro significa não selecionado.',
+          note: 'Use multi-select quando precisar comparar máquinas de fornos diferentes sem alternar a tela várias vezes.',
+          action: () => { resetDemo(); setFurnaces(['demoFurnaceA','demoFurnaceB','demoFurnaceC']); focus('#demoFilterRow'); clickMotion('#demoFurnaceB'); }
         },
         {
-          label: 'Etapa 3',
-          title: 'Como voltar para Todos os Fornos',
-          description: 'Use o botão Todos os Fornos quando quiser limpar a seleção e voltar a visualizar o conjunto completo. Ele remove os filtros ativos e restaura a visão geral.',
-          callout: 'Se você se perder na filtragem, clique em Todos os Fornos. Esse é o caminho mais seguro para recomeçar a navegação.',
-          note: 'Na operação diária, use Todos os Fornos para conferir se uma máquina não está oculta por algum filtro selecionado anteriormente.',
-          target: '#demoAllFurnaces',
-          action: () => { resetDemo(); clearFurnaces(); document.querySelector('#demoAllFurnaces').classList.add('selected'); pulse('#demoAllFurnaces'); document.querySelector('#demoFilterRow').classList.add('is-3d-flip'); }
+          label: 'Etapa 3', title: 'Limpar filtros', target: '#demoAllFurnaces', caption: 'Clique em Todos os Fornos para remover as seleções e voltar à visão geral.',
+          description: 'Quando quiser voltar a visualizar tudo, use Todos os Fornos. Ele limpa os filtros individuais e retorna a visualização completa.',
+          callout: 'Se a tela parecer filtrada demais, volte em Todos os Fornos.',
+          note: 'Esse botão é a forma mais rápida de reiniciar a busca sem precisar desmarcar forno por forno.',
+          action: () => { resetDemo(); clearFurnaces(); document.getElementById('demoAllFurnaces').classList.add('selected'); focus('#demoAllFurnaces'); clickMotion('#demoAllFurnaces'); }
         },
         {
-          label: 'Etapa 4',
-          title: 'Modo compacto',
-          description: 'O modo compacto reduz o tamanho dos cartões para economizar espaço. Nele, os botões de soma e subtração ficam ocultos, o texto Máquina pode ser removido e permanecem visíveis apenas o código da máquina, prefixo, valor atual e botão de teclado.',
-          callout: 'Use o modo compacto quando houver muitas máquinas na tela ou quando o objetivo for apenas consultar valores e fazer correções pelo teclado.',
-          note: 'No modo compacto, o sistema fica mais limpo: menos botões na tela, leitura mais rápida e menor risco de toque acidental nos botões + ou -.',
-          target: '#demoCard',
-          action: () => { resetDemo(); document.querySelector('#demoCard').classList.add('compact-demo'); pulse('#demoCard'); document.querySelector('#demoCard').classList.add('is-3d-flip'); }
+          label: 'Etapa 4', title: 'Modo compacto', target: '#demoCard', caption: 'No modo compacto, os botões somem e ficam apenas código, prefixo, valor e teclado.',
+          description: 'O modo compacto otimiza espaço. Ele remove os botões de + e - dos cartões e mantém apenas as informações necessárias para consulta e digitação direta.',
+          callout: 'Use quando houver muitas máquinas na tela ou quando a conferência for feita principalmente pelo valor.',
+          note: 'No compacto, a palavra Máquina também é removida. A identificação fica apenas como A1, A2, B1, D10 etc.',
+          action: () => { resetDemo(); document.getElementById('demoCard').classList.add('compact-demo'); focus('#demoCard'); }
         },
         {
-          label: 'Etapa 5',
-          title: 'Identificação clicável e máquina amostra',
-          description: 'O código da máquina, como A1, A2, A3, B1 ou D10, é clicável. Ao clicar nele, o cartão passa a informar que aquela máquina é AMOSTRA. A mensagem destacada avisa a equipe antes de qualquer apontamento.',
-          callout: 'A identificação AMOSTRA deve ser usada para sinalizar uma máquina que precisa de atenção especial, validação ou acompanhamento diferenciado.',
-          note: 'Quando a mensagem de amostra aparecer, leia o aviso antes de alterar valores. Isso evita movimentação indevida em máquina de teste, validação ou controle especial.',
-          target: '#demoMachineCode',
-          action: () => { resetDemo(); document.querySelector('#demoMachineCode').classList.add('active'); document.querySelector('#demoSampleBanner').classList.add('visible'); pulse('#demoMachineCode'); document.querySelector('#demoSampleBanner').classList.add('is-3d-pop'); }
+          label: 'Etapa 5', title: 'Máquina amostra', target: '#demoMachineCode', caption: 'Clique no código A3 para marcar ou desmarcar esta máquina como amostra.',
+          description: 'A identificação da máquina é clicável. Ao clicar em A1, A2, A3 e assim por diante, o cartão mostra um aviso de máquina AMOSTRA.',
+          callout: 'Esse aviso serve para a equipe perceber rapidamente que aquela máquina tem condição especial.',
+          note: 'Antes de apontar valores em uma máquina marcada como amostra, confirme se a alteração realmente deve ser feita.',
+          action: () => { resetDemo(); document.getElementById('demoMachineCode').classList.add('active'); document.getElementById('demoSampleBanner').classList.add('visible','motion-pop'); focus('#demoMachineCode'); clickMotion('#demoMachineCode'); }
         },
         {
-          label: 'Etapa 6',
-          title: 'Adicionar quantidades',
-          description: 'Use os botões positivos para registrar entrada, reposição ou acréscimo de peças. Os botões +1, +2, +5 e +10 facilitam a rotina quando o valor aumenta em quantidades conhecidas.',
-          callout: 'Para uma pequena reposição, use +1 ou +2. Para reposições maiores, use +5 ou +10.',
-          note: 'Exemplo: se o valor atual é 12 e você recebeu mais 5 peças, clique em +5. O sistema passa a mostrar 17.',
-          target: '#demoAddGroup',
-          action: () => { resetDemo(); pulse('#demoAddGroup'); animateValue(12, 17); }
+          label: 'Etapa 6', title: 'Adicionar quantidades', target: '#demoAddGroup', caption: 'Use +1, +2, +5 ou +10 quando o saldo precisar aumentar.',
+          description: 'Os botões positivos servem para registrar acréscimos. Use o botão que corresponde à quantidade que entrou ou foi reposta.',
+          callout: 'Exemplo: valor 12 + botão +5 = valor 17.',
+          note: 'Confira se está no item correto, como Molde ou Blank, antes de clicar.',
+          action: () => { resetDemo(); focus('#demoAddGroup'); clickMotion('#demoAddGroup button:last-child'); animateValue(12,17); }
         },
         {
-          label: 'Etapa 7',
-          title: 'Remover quantidades',
-          description: 'Use os botões negativos para registrar consumo, retirada ou baixa de peças. Os botões -1, -2, -5 e -10 reduzem o saldo rapidamente sem precisar digitar.',
-          callout: 'Antes de reduzir o saldo, confirme se o cartão é da máquina correta. Baixas em máquina errada causam divergência no estoque.',
-          note: 'Exemplo: se o valor atual é 12 e foram consumidas 2 peças, clique em -2. O sistema passa a mostrar 10.',
-          target: '#demoRemoveGroup',
-          action: () => { resetDemo(); pulse('#demoRemoveGroup'); animateValue(12, 10, true); }
+          label: 'Etapa 7', title: 'Remover quantidades', target: '#demoRemoveGroup', caption: 'Use -1, -2, -5 ou -10 quando houver consumo ou retirada.',
+          description: 'Os botões negativos servem para baixar o saldo. Eles são usados quando peças foram consumidas, retiradas ou corrigidas para menos.',
+          callout: 'Exemplo: valor 12 + botão -2 = valor 10.',
+          note: 'Reduções feitas na máquina errada geram divergência. Confirme máquina e item antes de reduzir.',
+          action: () => { resetDemo(); focus('#demoRemoveGroup'); clickMotion('#demoRemoveGroup button:nth-child(3)'); animateValue(12,10,true); }
         },
         {
-          label: 'Etapa 8',
-          title: 'Digitação direta pelo teclado',
-          description: 'Quando precisar informar um valor exato, clique no ícone de teclado. O campo numérico aparece para digitação direta. Essa função é útil em conferência física, correção de divergência e ajuste autorizado.',
-          callout: 'Digite o valor final correto, não a diferença. Se o estoque real é 14, digite 14.',
-          note: 'Use digitação direta com atenção. Ela é mais poderosa que os botões rápidos, porque substitui o valor pelo número informado.',
-          target: '#demoKeyboardBtn',
-          action: () => {
-            resetDemo();
-            const keyboard = document.querySelector('#demoKeyboardBtn');
-            const input = document.querySelector('#demoInput');
-            const value = document.querySelector('#demoValue');
-            keyboard.classList.add('pulse-target');
-            keyboard.style.background = '#0f172a';
-            keyboard.style.color = '#fff';
-            value.style.display = 'none';
-            input.style.display = 'block';
-            input.value = 14;
-            input.classList.add('bounce-soft');
-          }
+          label: 'Etapa 8', title: 'Digitação direta', target: '#demoKeyboardBtn', caption: 'Clique no teclado para informar o valor final exato.',
+          description: 'O botão de teclado abre a digitação direta. Use quando precisar corrigir o valor para um número exato após conferência física.',
+          callout: 'Digite o valor final, não a diferença. Se o saldo correto é 14, digite 14.',
+          note: 'A digitação direta é útil para auditoria, conferência e correção de divergência.',
+          action: () => { resetDemo(); focus('#demoKeyboardBtn'); clickMotion('#demoKeyboardBtn'); document.getElementById('demoValue').style.display='none'; const input=document.getElementById('demoInput'); input.style.display='block'; input.value=14; input.classList.add('bounce-soft'); }
         },
         {
-          label: 'Etapa 9',
-          title: 'Consultar os dados do prefixo',
-          description: 'O prefixo identifica informações técnicas relacionadas ao conjunto da máquina. Ao selecionar o prefixo, o sistema exibe detalhes como processo, corredor, prateleira, Neck Ring, Blank e Molde.',
-          callout: 'Consulte o prefixo sempre que houver dúvida de localização, composição ou identificação do conjunto.',
-          note: 'Essa consulta evita pegar componente errado. Antes de apontar, confira se o prefixo corresponde ao que está sendo usado na operação.',
-          target: '#demoPrefixChip',
-          action: () => { resetDemo(); pulse('#demoPrefixChip'); document.querySelector('#demoPrefixPanel').classList.add('visible','is-3d-pop'); }
+          label: 'Etapa 9', title: 'Consultar prefixo', target: '#demoPrefixChip', caption: 'Clique no prefixo para abrir dados técnicos do conjunto.',
+          description: 'O prefixo ajuda a identificar informações relacionadas ao conjunto da máquina, como processo, corredor, prateleira, Neck Ring, Blank e Molde.',
+          callout: 'Use o prefixo para evitar pegar ou apontar componente errado.',
+          note: 'Quando houver dúvida de localização ou identificação, consulte o prefixo antes de registrar valores.',
+          action: () => { resetDemo(); document.getElementById('demoPrefixPanel').classList.add('visible','motion-pop'); focus('#demoPrefixChip'); clickMotion('#demoPrefixChip'); }
         },
         {
-          label: 'Etapa 10',
-          title: 'Dashboard com rolagem horizontal',
-          description: 'Os gráficos do dashboard usam rolagem horizontal para facilitar a leitura quando existem muitas máquinas. Em vez de apertar todos os nomes no mesmo espaço, o gráfico fica mais largo e você rola para ver os demais pontos.',
-          callout: 'Arraste a barra horizontal ou use o touchpad/mouse para percorrer o gráfico. Isso melhora a leitura dos nomes das máquinas e das colunas.',
-          note: 'Quando estiver em tela pequena ou com muitos fornos selecionados, a rolagem horizontal é a melhor forma de interpretar o gráfico sem confusão.',
-          target: '#demoChartScroll',
-          action: () => { resetDemo(); document.querySelector('#demoChartScroll').scrollLeft = 160; pulse('#demoChartScroll'); document.querySelector('#demoChartWide').classList.add('is-3d-slide'); }
+          label: 'Etapa 10', title: 'Dashboard com scroll horizontal', target: '#demoChartScroll', caption: 'O gráfico é largo. Role para o lado para ler todas as máquinas sem apertar os nomes.',
+          description: 'Cada gráfico possui rolagem horizontal. Isso melhora a interpretação quando há muitas máquinas, porque os nomes e barras não ficam esmagados.',
+          callout: 'Arraste para o lado, use touchpad ou a barra horizontal do gráfico.',
+          note: 'Em telas menores, a rolagem horizontal é essencial para interpretar os dados corretamente.',
+          action: () => { resetDemo(); focus('#demoChartScroll'); const chart=document.getElementById('demoChartScroll'); chart.scrollLeft=220; document.getElementById('demoChartWide').classList.add('motion-slide-x'); }
         },
         {
-          label: 'Etapa 11',
-          title: 'Séries visíveis no gráfico',
-          description: 'Por padrão, o dashboard começa mostrando Molde e Blank. Neck Ring e Funil ficam ocultos inicialmente para deixar o gráfico mais limpo. Quando precisar analisar esses itens, ative a visualização nos botões correspondentes.',
-          callout: 'Molde e Blank aparecem primeiro porque são os principais para leitura rápida. Neck Ring e Funil entram apenas quando você escolher mostrar.',
-          note: 'Use essa regra para evitar poluição visual: deixe visível só o que você precisa analisar naquele momento.',
-          target: '#demoDashboardTools',
-          action: () => { resetDemo(); document.querySelector('#demoChartWide').classList.add('show-neck','show-funil','is-3d-pop'); document.querySelector('#demoNeckToggle').classList.add('active'); document.querySelector('#demoFunilToggle').classList.add('active'); pulse('#demoDashboardTools'); }
+          label: 'Etapa 11', title: 'Itens do gráfico', target: '#demoDashboardTools', caption: 'Molde e Blank iniciam visíveis. Neck Ring e Funil aparecem apenas quando você ativar.',
+          description: 'O dashboard começa mostrando Molde e Blank. Neck Ring e Funil ficam ocultos para reduzir poluição visual, mas podem ser ativados quando a análise exigir.',
+          callout: 'Mantenha visível apenas o que você precisa analisar naquele momento.',
+          note: 'Ativar muitos itens ao mesmo tempo pode deixar o gráfico carregado. Use os botões conforme a necessidade.',
+          action: () => { resetDemo(); document.getElementById('demoChartWide').classList.add('show-neck','show-funil','motion-pop'); document.getElementById('demoNeckToggle').classList.add('active'); document.getElementById('demoFunilToggle').classList.add('active'); focus('#demoDashboardTools'); clickMotion('#demoNeckToggle'); }
         },
         {
-          label: 'Etapa 12',
-          title: 'Boas práticas de operação',
-          description: 'Antes de apontar, confirme forno, máquina, prefixo e tipo de item. Faça o registro no momento da movimentação. Use filtros para encontrar a máquina, modo compacto para ganhar espaço e dashboard para conferência geral.',
-          callout: 'A sequência segura é: filtrar forno, localizar máquina, conferir prefixo, verificar se é amostra, alterar valor e revisar o resultado.',
-          note: 'Se houver dúvida, não chute o valor. Confira fisicamente, peça apoio da equipe responsável e depois registre o valor correto.',
-          target: '#demoCard',
-          action: () => { resetDemo(); pulse('#demoCard'); }
+          label: 'Etapa 12', title: 'Rotina segura', target: '#demoCard', caption: 'Sequência recomendada: filtro, máquina, prefixo, amostra, valor e revisão.',
+          description: 'A forma mais segura de operar é seguir uma sequência fixa: selecione o forno, encontre a máquina, confira o prefixo, veja se é amostra, altere o valor e revise o resultado.',
+          callout: 'Na dúvida, não chute. Confira fisicamente e depois registre.',
+          note: 'Essa rotina reduz erro operacional e deixa o uso do sistema mais consistente para toda a equipe.',
+          action: () => { resetDemo(); focus('#demoCard'); }
         }
       ];
 
@@ -490,71 +411,65 @@
       const stepDescription = document.getElementById('tutorialStepDescription');
       const callout = document.getElementById('tutorialCallout');
       const extraNote = document.getElementById('tutorialExtraNote');
-      const spotlight = document.getElementById('spotlightRing');
       const progress = document.getElementById('tutorialProgressBar');
       const listItems = [...document.querySelectorAll('#tutorialStepsList li')];
-      const prevBtn = document.getElementById('prevStepBtn');
-      const nextBtn = document.getElementById('nextStepBtn');
-      const startBtn = document.getElementById('startTutorialBtn');
+      const cursor = document.getElementById('guideCursor');
+      const caption = document.getElementById('stepCaption');
+      const stage = document.getElementById('tutorialStage');
       let currentStep = 0;
 
-      function pulse(selector) {
-        document.querySelectorAll('.pulse-target').forEach(el => el.classList.remove('pulse-target'));
-        document.querySelectorAll('.is-3d-focus,.is-3d-lift,.is-3d-flip,.is-3d-slide,.is-3d-pop').forEach(el => el.classList.remove('is-3d-focus','is-3d-lift','is-3d-flip','is-3d-slide','is-3d-pop'));
-        const el = document.querySelector(selector);
-        if (el) el.classList.add('pulse-target','is-3d-focus','is-3d-lift');
-      }
-
-      function setFurnaces(ids) {
-        document.querySelectorAll('#demoFilterRow button').forEach(btn => btn.classList.remove('selected'));
-        ids.forEach(id => document.getElementById(id)?.classList.add('selected'));
-      }
-
-      function clearFurnaces() {
-        document.querySelectorAll('#demoFilterRow button').forEach(btn => btn.classList.remove('selected'));
-      }
+      function byId(id) { return document.getElementById(id); }
+      function clearFurnaces() { document.querySelectorAll('#demoFilterRow button').forEach(btn => btn.classList.remove('selected')); }
+      function setFurnaces(ids) { clearFurnaces(); ids.forEach(id => byId(id)?.classList.add('selected')); }
+      function clearFocus() { document.querySelectorAll('.focus-target,.motion-click,.motion-slide-x,.motion-pop,.bounce-soft,.shake-soft').forEach(el => el.classList.remove('focus-target','motion-click','motion-slide-x','motion-pop','bounce-soft','shake-soft')); }
 
       function resetDemo() {
-        document.querySelectorAll('.pulse-target').forEach(el => el.classList.remove('pulse-target'));
-        document.querySelectorAll('.shake-soft').forEach(el => el.classList.remove('shake-soft'));
-        document.querySelectorAll('.bounce-soft').forEach(el => el.classList.remove('bounce-soft'));
-        document.querySelectorAll('.is-3d-focus,.is-3d-lift,.is-3d-flip,.is-3d-slide,.is-3d-pop').forEach(el => el.classList.remove('is-3d-focus','is-3d-lift','is-3d-flip','is-3d-slide','is-3d-pop'));
-        document.querySelector('#demoCard').classList.remove('compact-demo');
-        document.querySelector('#demoMachineCode').classList.remove('active');
-        document.querySelector('#demoSampleBanner').classList.remove('visible');
-        document.querySelector('#demoValue').style.display = 'block';
-        document.querySelector('#demoValue').textContent = '12';
-        document.querySelector('#demoValue').style.color = 'var(--accent)';
-        document.querySelector('#demoInput').style.display = 'none';
-        document.querySelector('#demoKeyboardBtn').style.background = '#e2e8f0';
-        document.querySelector('#demoKeyboardBtn').style.color = '#334155';
-        document.querySelector('#demoPrefixPanel').classList.remove('visible');
-        document.querySelector('#demoChartWide').classList.remove('show-neck','show-funil');
-        document.querySelector('#demoNeckToggle').classList.remove('active');
-        document.querySelector('#demoFunilToggle').classList.remove('active');
-        document.querySelector('#demoChartScroll').scrollLeft = 0;
+        clearFocus();
+        byId('demoCard').classList.remove('compact-demo');
+        byId('demoMachineCode').classList.remove('active');
+        byId('demoSampleBanner').classList.remove('visible','motion-pop');
+        byId('demoValue').style.display = 'block';
+        byId('demoValue').textContent = '12';
+        byId('demoValue').style.color = 'var(--accent)';
+        byId('demoInput').style.display = 'none';
+        byId('demoKeyboardBtn').style.background = '#e2e8f0';
+        byId('demoKeyboardBtn').style.color = '#334155';
+        byId('demoPrefixPanel').classList.remove('visible','motion-pop');
+        byId('demoChartWide').classList.remove('show-neck','show-funil','motion-slide-x','motion-pop');
+        byId('demoNeckToggle').classList.remove('active');
+        byId('demoFunilToggle').classList.remove('active');
+        byId('demoChartScroll').scrollLeft = 0;
         setFurnaces(['demoFurnaceA']);
       }
 
+      function placeGuide(selector, text) {
+        const target = document.querySelector(selector);
+        if (!target) return;
+        const t = target.getBoundingClientRect();
+        const s = stage.getBoundingClientRect();
+        const x = t.left - s.left + Math.min(t.width * .72, t.width - 10);
+        const y = t.top - s.top + Math.min(t.height * .42, t.height - 10);
+        cursor.style.left = `${x}px`;
+        cursor.style.top = `${y}px`;
+        cursor.style.opacity = '1';
+        caption.textContent = text;
+        caption.style.left = `${Math.min(Math.max(12, x + 24), Math.max(12, s.width - 350))}px`;
+        caption.style.top = `${Math.min(Math.max(12, y + 24), Math.max(12, s.height - 110))}px`;
+        caption.classList.add('visible');
+      }
+
+      function focus(selector) {
+        clearFocus();
+        const el = document.querySelector(selector);
+        if (el) el.classList.add('focus-target');
+      }
+      function clickMotion(selector) { document.querySelector(selector)?.classList.add('motion-click'); }
       function animateValue(from, to, isDecrease = false) {
-        const value = document.querySelector('#demoValue');
+        const value = byId('demoValue');
         value.textContent = String(from);
         value.style.color = isDecrease ? 'var(--error)' : 'var(--success)';
         value.classList.add(isDecrease ? 'shake-soft' : 'bounce-soft');
-        setTimeout(() => { value.textContent = String(to); }, 180);
-      }
-
-      function positionSpotlight(selector) {
-        const target = document.querySelector(selector);
-        const stage = document.getElementById('tutorialStage');
-        if (!target || !stage) return;
-        const targetRect = target.getBoundingClientRect();
-        const stageRect = stage.getBoundingClientRect();
-        spotlight.style.opacity = '1';
-        spotlight.style.left = `${targetRect.left - stageRect.left - 10}px`;
-        spotlight.style.top = `${targetRect.top - stageRect.top - 10}px`;
-        spotlight.style.width = `${targetRect.width + 20}px`;
-        spotlight.style.height = `${targetRect.height + 20}px`;
+        setTimeout(() => { value.textContent = String(to); }, 220);
       }
 
       function renderStep(index) {
@@ -567,46 +482,51 @@
         extraNote.textContent = step.note;
         progress.style.width = `${((currentStep + 1) / steps.length) * 100}%`;
         listItems.forEach((item, i) => item.classList.toggle('active', i === currentStep));
+        caption.classList.remove('visible');
+        cursor.style.opacity = '0';
         step.action();
-        requestAnimationFrame(() => positionSpotlight(step.target));
+        requestAnimationFrame(() => placeGuide(step.target, step.caption));
       }
 
-      prevBtn.addEventListener('click', () => renderStep(currentStep - 1));
-      nextBtn.addEventListener('click', () => renderStep(currentStep + 1));
-      startBtn.addEventListener('click', () => {
-        document.querySelector('.tutorial-stage-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        renderStep(0);
-      });
+      function flashArrow(id) {
+        const el = byId(id);
+        if (!el) return;
+        el.classList.add('active-flash');
+        setTimeout(() => el.classList.remove('active-flash'), 180);
+      }
+      function prev() { flashArrow('arrowLeft'); renderStep(currentStep - 1); }
+      function next() { flashArrow('arrowRight'); renderStep(currentStep + 1); }
 
+      byId('prevStepBtn').addEventListener('click', prev);
+      byId('nextStepBtn').addEventListener('click', next);
+      byId('arrowLeft').addEventListener('click', prev);
+      byId('arrowUp').addEventListener('click', () => { flashArrow('arrowUp'); renderStep(currentStep - 1); });
+      byId('arrowRight').addEventListener('click', next);
+      byId('arrowDown').addEventListener('click', () => { flashArrow('arrowDown'); renderStep(currentStep + 1); });
+      byId('startTutorialBtn').addEventListener('click', () => { document.querySelector('.tutorial-stage-section').scrollIntoView({ behavior: 'smooth', block: 'start' }); renderStep(0); });
       listItems.forEach((item, index) => item.addEventListener('click', () => renderStep(index)));
-      window.addEventListener('resize', () => positionSpotlight(steps[currentStep].target));
+      window.addEventListener('resize', () => placeGuide(steps[currentStep].target, steps[currentStep].caption));
 
-      document.querySelector('#demoMachineCode').addEventListener('click', () => {
-        document.querySelector('#demoMachineCode').classList.toggle('active');
-        document.querySelector('#demoSampleBanner').classList.toggle('visible');
+      document.addEventListener('keydown', (event) => {
+        const tag = document.activeElement?.tagName?.toLowerCase();
+        if (tag === 'input' || tag === 'textarea') return;
+        if (event.key === 'ArrowLeft') { event.preventDefault(); flashArrow('arrowLeft'); renderStep(currentStep - 1); }
+        if (event.key === 'ArrowUp') { event.preventDefault(); flashArrow('arrowUp'); renderStep(currentStep - 1); }
+        if (event.key === 'ArrowRight') { event.preventDefault(); flashArrow('arrowRight'); renderStep(currentStep + 1); }
+        if (event.key === 'ArrowDown') { event.preventDefault(); flashArrow('arrowDown'); renderStep(currentStep + 1); }
       });
-      document.querySelector('#demoNeckToggle').addEventListener('click', () => {
-        document.querySelector('#demoNeckToggle').classList.toggle('active');
-        document.querySelector('#demoChartWide').classList.toggle('show-neck');
-      });
-      document.querySelector('#demoFunilToggle').addEventListener('click', () => {
-        document.querySelector('#demoFunilToggle').classList.toggle('active');
-        document.querySelector('#demoChartWide').classList.toggle('show-funil');
-      });
+
+      byId('demoMachineCode').addEventListener('click', () => { byId('demoMachineCode').classList.toggle('active'); byId('demoSampleBanner').classList.toggle('visible'); });
+      byId('demoNeckToggle').addEventListener('click', () => { byId('demoNeckToggle').classList.toggle('active'); byId('demoChartWide').classList.toggle('show-neck'); });
+      byId('demoFunilToggle').addEventListener('click', () => { byId('demoFunilToggle').classList.toggle('active'); byId('demoChartWide').classList.toggle('show-funil'); });
       document.querySelectorAll('#demoFilterRow button:not(#demoAllFurnaces)').forEach(btn => {
-        btn.addEventListener('click', () => {
-          document.querySelector('#demoAllFurnaces').classList.remove('selected');
-          btn.classList.toggle('selected');
-        });
+        btn.addEventListener('click', () => { byId('demoAllFurnaces').classList.remove('selected'); btn.classList.toggle('selected'); });
       });
-      document.querySelector('#demoAllFurnaces').addEventListener('click', () => {
-        clearFurnaces();
-        document.querySelector('#demoAllFurnaces').classList.add('selected');
-      });
+      byId('demoAllFurnaces').addEventListener('click', () => { clearFurnaces(); byId('demoAllFurnaces').classList.add('selected'); });
 
       renderStep(0);
     })();
-    </script>
-    <script src="pwa-register.js"></script>
+  </script>
+  <script src="pwa-register.js"></script>
 </body>
 </html>
