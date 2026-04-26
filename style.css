@@ -1796,3 +1796,163 @@ body.dark-mode .preloader-spinner {
 .top-bar button.tutorial-btn:hover {
     filter: brightness(1.05);
 }
+
+
+/* ========== MODO COMPACTO DE PRODUÇÃO ========== */
+.tabs-header {
+    align-items: stretch;
+}
+
+.tab-action-btn {
+    margin-left: auto;
+    padding: 12px 18px;
+    border: 1px solid var(--border);
+    border-radius: 0;
+    background: var(--card);
+    color: var(--text);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tab-action-btn i {
+    color: var(--primary);
+}
+
+.tab-action-btn:hover {
+    color: var(--primary);
+    background: var(--primary-light);
+}
+
+.tab-action-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #ffffff;
+}
+
+.tab-action-btn.active i {
+    color: #ffffff;
+}
+
+.valor-controle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+}
+
+.input-digitado {
+    display: none;
+    width: 70px;
+    padding: 4px 6px;
+    margin-top: 4px;
+    text-align: center;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    background: var(--card);
+    font-family: inherit;
+    font-weight: 600;
+}
+
+body.modo-compacto .maquinas-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+}
+
+body.modo-compacto .maquina {
+    padding: 14px;
+}
+
+body.modo-compacto .maquina:hover {
+    transform: none;
+}
+
+body.modo-compacto .maquina-header {
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    gap: 10px;
+}
+
+body.modo-compacto .maquina-id {
+    font-size: 1.05rem;
+}
+
+body.modo-compacto .prefixo-container {
+    min-width: 130px;
+}
+
+body.modo-compacto .prefixo-actions {
+    gap: 6px;
+}
+
+body.modo-compacto .select-selected {
+    padding: 7px 28px 7px 10px;
+    font-size: 0.9rem;
+}
+
+body.modo-compacto .linha {
+    margin-top: 8px;
+    padding: 8px 10px;
+    gap: 8px;
+}
+
+body.modo-compacto .linha span[class$="-label"],
+body.modo-compacto .molde-label,
+body.modo-compacto .blank-label,
+body.modo-compacto .neckring-label,
+body.modo-compacto .funil-label {
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+body.modo-compacto .controles {
+    gap: 6px;
+}
+
+body.modo-compacto .btn-group {
+    display: none;
+}
+
+body.modo-compacto .controles span {
+    min-width: 28px;
+    font-size: 1.1rem;
+}
+
+body.modo-compacto .btn-digitado {
+    margin-left: 0;
+    min-width: 34px;
+    padding: 7px 9px;
+}
+
+body.modo-compacto .reserva-label {
+    font-size: 0.82rem;
+}
+
+body.modo-compacto .alert-message {
+    margin-top: 10px;
+    padding: 8px 10px;
+    font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+    .tabs-header {
+        flex-wrap: wrap;
+    }
+
+    .tab-action-btn {
+        width: 100%;
+        justify-content: center;
+        margin-left: 0;
+        border-top: 1px solid var(--border);
+    }
+
+    body.modo-compacto .maquinas-grid {
+        grid-template-columns: 1fr;
+    }
+}

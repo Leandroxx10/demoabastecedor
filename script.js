@@ -27,6 +27,7 @@ let config = {
 
 // Configuração de filtro por forno
 let fornoAtivo = 'todos';
+let modoCompactoAtivo = localStorage.getItem('modoCompacto') === 'true';
 let clicksTitulo = 0;
 let timeoutClicks = null;
 
@@ -62,6 +63,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.body.classList.add('dark-mode');
         document.querySelector('.dark-mode-toggle').innerHTML = '<i class="fas fa-sun"></i> Modo Claro';
     }
+
+    aplicarEstadoModoCompacto(false);
     
     // Ocultar preloader após 1.5 segundos
     setTimeout(() => {
@@ -267,344 +270,197 @@ function inicializarFirebaseListeners() {
 // ====================================================
 
 function criarPainel(maquinas) {
-    dadosMaquinas = maquinas;
-    const filtro = document.getElementById("filtro").value.toLowerCase();
+    dadosMaquinas = maquinas || {};
+    const filtroInput = document.getElementById("filtro");
+    const filtro = filtroInput ? filtroInput.value.toLowerCase().trim() : "";
     const painel = document.getElementById("painel");
-    
+
     if (!painel) return;
-    
+
     painel.innerHTML = "";
-    
-    // Inicializar totais
+
     let totalMolde = 0;
     let totalBlank = 0;
     let totalNeckRing = 0;
     let totalFunil = 0;
     let totalCriticos = 0;
 
-    // Filtrar máquinas (todas ou apenas críticas)
-    let maquinasFiltradas = Object.entries(maquinas);
-    
+    let maquinasFiltradas = Object.entries(dadosMaquinas);
+
     if (mostrarCriticos) {
-        maquinasFiltradas = maquinasFiltradas
-            .filter(([_, m]) => 
-                (m.molde || 0) <= config.estoqueMinimo || 
-                (m.blank || 0) <= config.estoqueMinimo ||
-                (m.funil || 0) <= config.estoqueMinimo
-            );
+        maquinasFiltradas = maquinasFiltradas.filter(([_, m]) =>
+            (m.molde || 0) <= config.estoqueMinimo ||
+            (m.blank || 0) <= config.estoqueMinimo ||
+            (m.funil || 0) <= config.estoqueMinimo
+        );
     }
 
-    // Filtrar por forno
-    if (fornoAtivo !== 'todos') {
-        // Array de IDs esperados para cada forno
-        const idsEsperados = {
-            'A': ['A1', 'A2', 'A3', 'A4', 'A5', 'A6'],
-            'B': ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8'],
-            'C': ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8'],
-            'D': ['10', '11', '12', '13', '14', '15']
-        };
-        
-        if (idsEsperados[fornoAtivo]) {
-            maquinasFiltradas = maquinasFiltradas.filter(([id, _]) => 
-                idsEsperados[fornoAtivo].includes(id)
-            );
-        }
+    if (fornoAtivo !== "todos") {
+        maquinasFiltradas = maquinasFiltradas.filter(([id]) => maquinaPertenceAoForno(id, fornoAtivo));
     }
 
-    // Ordenar máquinas por ID
-    maquinasFiltradas.sort((a, b) => a[0].localeCompare(b[0]));
+    maquinasFiltradas.sort((a, b) => ordenarMaquinasPorId(a[0], b[0]));
 
-    // Criar cartão para cada máquina
     for (let [id, m] of maquinasFiltradas) {
-        // Pular máquinas que não correspondem ao filtro
         if (filtro && !id.toLowerCase().includes(filtro)) continue;
-        
-        // Calcular totais
+
         totalMolde += m.molde || 0;
         totalBlank += m.blank || 0;
         totalNeckRing += m.neck_ring || 0;
         totalFunil += m.funil || 0;
-        
-        // Verificar se a máquina está em estado crítico
+
         const alerta = config.alertasAtivos && (
-            (m.molde || 0) <= config.estoqueMinimo || 
+            (m.molde || 0) <= config.estoqueMinimo ||
             (m.blank || 0) <= config.estoqueMinimo ||
             (m.funil || 0) <= config.estoqueMinimo
         );
-        
+
         if (alerta) totalCriticos++;
-        
-        // Construir o HTML do cartão da máquina
+
         let maquinaHTML = `
-            <div class="maquina ${alerta ? 'alerta' : ''}">
+            <div class="maquina ${alerta ? "alerta" : ""}">
                 <div class="maquina-header">
                     <div class="maquina-id"><i class="fas fa-industry"></i> Máquina ${id}</div>`;
-        
-        // Adicionar prefixo se estiver ativado
+
         if (config.mostrarPrefixo) {
-            const currentPrefixo = m.prefixo || '';
+            const currentPrefixo = m.prefixo || "";
             const currentPrefixDisplay = getMachinePrefixDisplay(m, prefixos);
             const currentPrefixRecord =
                 findPrefixRecord(prefixos, currentPrefixo) ||
                 findPrefixRecord(prefixos, currentPrefixDisplay);
 
             maquinaHTML += `
-                <div class="prefixo-container">
-                    <div class="prefixo-actions">
-                        <div class="custom-select">
-                            <div class="select-selected" onclick="toggleCustomSelect('${id}')">
-                                ${currentPrefixDisplay || currentPrefixo || 'Selecione um prefixo'}
-                            </div>
-                            <div class="select-items" id="select-${id}">
-                                <div class="select-search-container">
-                                    <input type="text" class="select-search" placeholder="Pesquisar prefixo..." 
-                                           oninput="filtrarOpcoes('${id}', this.value)">
+                    <div class="prefixo-container">
+                        <div class="prefixo-actions">
+                            <div class="custom-select">
+                                <div class="select-selected" onclick="toggleCustomSelect('${id}')">
+                                    ${currentPrefixDisplay || currentPrefixo || "Selecione um prefixo"}
                                 </div>
-                                ${prefixos.map(pref => `
-                                    <div onclick="selecionarPrefixo('${id}', '${pref.id}')" 
-                                         ${pref.id === currentPrefixo || pref.displayName === currentPrefixDisplay ? 'class="selected"' : ''}>
-                                        <strong>${pref.displayName || pref.nome}</strong>
-                                        ${pref.id !== (pref.displayName || pref.nome) ? `<small style="display:block; opacity:.7; margin-top:2px;">${pref.id}</small>` : ''}
+                                <div class="select-items" id="select-${id}">
+                                    <div class="select-search-container">
+                                        <input type="text" class="select-search" placeholder="Pesquisar prefixo..."
+                                               oninput="filtrarOpcoes('${id}', this.value)">
                                     </div>
-                                `).join('')}
+                                    ${prefixos.map(pref => `
+                                        <div onclick="selecionarPrefixo('${id}', '${pref.id}')"
+                                             ${pref.id === currentPrefixo || pref.displayName === currentPrefixDisplay ? "class=\"selected\"" : ""}>
+                                            <strong>${pref.displayName || pref.nome}</strong>
+                                            ${pref.id !== (pref.displayName || pref.nome) ? `<small style="display:block; opacity:.7; margin-top:2px;">${pref.id}</small>` : ""}
+                                        </div>
+                                    `).join("")}
+                                </div>
                             </div>
+                            <button
+                                type="button"
+                                class="prefixo-view-btn ${currentPrefixRecord ? "" : "disabled"}"
+                                onclick="abrirDetalhesPrefixo('${id}')"
+                                title="Visualizar informações do prefixo detalhado"
+                                ${currentPrefixRecord ? "" : "disabled"}>
+                                <i class="fas fa-eye"></i>
+                            </button>
                         </div>
-                        <button
-                            type="button"
-                            class="prefixo-view-btn ${currentPrefixRecord ? '' : 'disabled'}"
-                            onclick="abrirDetalhesPrefixo('${id}')"
-                            title="Visualizar informações do prefixo detalhado"
-                            ${currentPrefixRecord ? '' : 'disabled'}>
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </div>
+                    </div>`;
+        }
+
+        maquinaHTML += `
                 </div>`;
+
+        if (config.mostrarMolde) {
+            maquinaHTML += renderLinhaControle(id, "molde", "Molde", "fas fa-cube", "molde-bg", m.molde || 0);
+            if (config.mostrarReserva) maquinaHTML += renderLinhaControle(id, "molde_reserva", "Reserva", "fas fa-warehouse", "molde-bg", m.molde_reserva || 0, true);
         }
-        
-        maquinaHTML += `</div>`;
-        
-        // Molde
-if (config.mostrarMolde) {
-    maquinaHTML += `
-        <div class="linha">
-            <span class="molde-label"><i class="fas fa-cube"></i> Molde:</span>
-            <div class="controles">
-                <div class="btn-group">
-                    <button class="molde-bg" onclick="alterar('${id}', 'molde', -10)">-10</button>
-                    <button class="molde-bg" onclick="alterar('${id}', 'molde', -5)">-5</button>
-                    <button class="molde-bg" onclick="alterar('${id}', 'molde', -2)">-2</button>
-                    <button class="molde-bg" onclick="alterar('${id}', 'molde', -1)">-1</button>
-                </div>
-                <div style="display: flex; flex-direction: column; align-items: center;">
-                    <span id="${id}-molde">${m.molde || 0}</span>
-                    <input type="number" 
-                           class="input-digitado" 
-                           id="input-${id}-molde" 
-                           value="${m.molde || 0}"
-                           style="width: 60px; padding: 2px; text-align: center; margin-top: 5px; display: none;"
-                           onblur="atualizarPorInput('${id}', 'molde', this.value)"
-                           onkeypress="if(event.key === 'Enter') { atualizarPorInput('${id}', 'molde', this.value); this.blur(); }">
-                </div>
-                <div class="btn-group">
-                    <button class="molde-bg" onclick="alterar('${id}', 'molde', 1)">+1</button>
-                    <button class="molde-bg" onclick="alterar('${id}', 'molde', 2)">+2</button>
-                    <button class="molde-bg" onclick="alterar('${id}', 'molde', 5)">+5</button>
-                    <button class="molde-bg" onclick="alterar('${id}', 'molde', 10)">+10</button>
-                </div>
-                <button class="btn-digitado" onclick="toggleModoDigitado('${id}', 'molde')">
-                    <i class="fas fa-keyboard"></i>
-                </button>
-            </div>
-        </div>`;
-            
-            // Molde Reserva
-            if (config.mostrarReserva) {
-                maquinaHTML += `
-                    <div class="linha reserva">
-                        <span class="molde-label reserva-label"><i class="fas fa-warehouse"></i> Reserva:</span>
-                        <div class="controles">
-                            <div class="btn-group">
-                                <button class="molde-bg" onclick="alterar('${id}', 'molde_reserva', -10)">-10</button>
-                                <button class="molde-bg" onclick="alterar('${id}', 'molde_reserva', -5)">-5</button>
-                                <button class="molde-bg" onclick="alterar('${id}', 'molde_reserva', -2)">-2</button>
-                                <button class="molde-bg" onclick="alterar('${id}', 'molde_reserva', -1)">-1</button>
-                            </div>
-                            <span id="${id}-molde_reserva">${m.molde_reserva || 0}</span>
-                            <div class="btn-group">
-                                <button class="molde-bg" onclick="alterar('${id}', 'molde_reserva', 1)">+1</button>
-                                <button class="molde-bg" onclick="alterar('${id}', 'molde_reserva', 2)">+2</button>
-                                <button class="molde-bg" onclick="alterar('${id}', 'molde_reserva', 5)">+5</button>
-                                <button class="molde-bg" onclick="alterar('${id}', 'molde_reserva', 10)">+10</button>
-                            </div>
-                        </div>
-                    </div>`;
-            }
+
+        if (config.mostrarBlank) {
+            maquinaHTML += renderLinhaControle(id, "blank", "Blank", "fas fa-cube", "blank-bg", m.blank || 0);
+            if (config.mostrarReserva) maquinaHTML += renderLinhaControle(id, "blank_reserva", "Reserva", "fas fa-warehouse", "blank-bg", m.blank_reserva || 0, true);
         }
-        
-        // Blank
-if (config.mostrarBlank) {
-    maquinaHTML += `
-        <div class="linha">
-            <span class="blank-label"><i class="fas fa-cube"></i> Blank:</span>
-            <div class="controles">
-                <div class="btn-group">
-                    <button class="blank-bg" onclick="alterar('${id}', 'blank', -10)">-10</button>
-                    <button class="blank-bg" onclick="alterar('${id}', 'blank', -5)">-5</button>
-                    <button class="blank-bg" onclick="alterar('${id}', 'blank', -2)">-2</button>
-                    <button class="blank-bg" onclick="alterar('${id}', 'blank', -1)">-1</button>
-                </div>
-                <div style="display: flex; flex-direction: column; align-items: center;">
-                    <span id="${id}-blank">${m.blank || 0}</span>
-                    <input type="number" 
-                           class="input-digitado" 
-                           id="input-${id}-blank" 
-                           value="${m.blank || 0}"
-                           style="width: 60px; padding: 2px; text-align: center; margin-top: 5px; display: none;"
-                           onblur="atualizarPorInput('${id}', 'blank', this.value)"
-                           onkeypress="if(event.key === 'Enter') { atualizarPorInput('${id}', 'blank', this.value); this.blur(); }">
-                </div>
-                <div class="btn-group">
-                    <button class="blank-bg" onclick="alterar('${id}', 'blank', 1)">+1</button>
-                    <button class="blank-bg" onclick="alterar('${id}', 'blank', 2)">+2</button>
-                    <button class="blank-bg" onclick="alterar('${id}', 'blank', 5)">+5</button>
-                    <button class="blank-bg" onclick="alterar('${id}', 'blank', 10)">+10</button>
-                </div>
-                <button class="btn-digitado" onclick="toggleModoDigitado('${id}', 'blank')">
-                    <i class="fas fa-keyboard"></i>
-                </button>
-            </div>
-        </div>`;
-            
-            // Blank Reserva
-            if (config.mostrarReserva) {
-                maquinaHTML += `
-                    <div class="linha reserva">
-                        <span class="blank-label reserva-label"><i class="fas fa-warehouse"></i> Reserva:</span>
-                        <div class="controles">
-                            <div class="btn-group">
-                                <button class="blank-bg" onclick="alterar('${id}', 'blank_reserva', -10)">-10</button>
-                                <button class="blank-bg" onclick="alterar('${id}', 'blank_reserva', -5)">-5</button>
-                                <button class="blank-bg" onclick="alterar('${id}', 'blank_reserva', -2)">-2</button>
-                                <button class="blank-bg" onclick="alterar('${id}', 'blank_reserva', -1)">-1</button>
-                            </div>
-                            <span id="${id}-blank_reserva">${m.blank_reserva || 0}</span>
-                            <div class="btn-group">
-                                <button class="blank-bg" onclick="alterar('${id}', 'blank_reserva', 1)">+1</button>
-                                <button class="blank-bg" onclick="alterar('${id}', 'blank_reserva', 2)">+2</button>
-                                <button class="blank-bg" onclick="alterar('${id}', 'blank_reserva', 5)">+5</button>
-                                <button class="blank-bg" onclick="alterar('${id}', 'blank_reserva', 10)">+10</button>
-                            </div>
-                        </div>
-                    </div>`;
-            }
-        }
-        
-        // Neck Ring
+
         if (config.mostrarNeckring) {
-            maquinaHTML += `
-                <div class="linha">
-                    <span class="neckring-label"><i class="fas fa-ring"></i> Neck Ring:</span>
-                    <div class="controles">
-                        <div class="btn-group">
-                            <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring', -10)">-10</button>
-                            <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring', -5)">-5</button>
-                            <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring', -2)">-2</button>
-                            <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring', -1)">-1</button>
-                        </div>
-                        <span id="${id}-neck_ring">${m.neck_ring || 0}</span>
-                        <div class="btn-group">
-                            <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring', 1)">+1</button>
-                            <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring', 2)">+2</button>
-                            <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring', 5)">+5</button>
-                            <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring', 10)">+10</button>
-                        </div>
-                    </div>
-                </div>`;
-            
-            // Neck Ring Reserva
-            if (config.mostrarReserva) {
-                maquinaHTML += `
-                    <div class="linha reserva">
-                        <span class="neckring-label reserva-label"><i class="fas fa-warehouse"></i> Reserva:</span>
-                        <div class="controles">
-                            <div class="btn-group">
-                                <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring_reserva', -10)">-10</button>
-                                <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring_reserva', -5)">-5</button>
-                                <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring_reserva', -2)">-2</button>
-                                <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring_reserva', -1)">-1</button>
-                            </div>
-                            <span id="${id}-neck_ring_reserva">${m.neck_ring_reserva || 0}</span>
-                            <div class="btn-group">
-                                <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring_reserva', 1)">+1</button>
-                                <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring_reserva', 2)">+2</button>
-                                <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring_reserva', 5)">+5</button>
-                                <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring_reserva', 10)">+10</button>
-                            </div>
-                        </div>
-                    </div>`;
-            }
+            maquinaHTML += renderLinhaControle(id, "neck_ring", "Neck Ring", "fas fa-ring", "neckring-bg", m.neck_ring || 0);
+            if (config.mostrarReserva) maquinaHTML += renderLinhaControle(id, "neck_ring_reserva", "Reserva", "fas fa-warehouse", "neckring-bg", m.neck_ring_reserva || 0, true);
         }
-        
-        // Funil
+
         if (config.mostrarFunil) {
-            maquinaHTML += `
-                <div class="linha">
-                    <span class="funil-label"><i class="fas fa-filter"></i> Funil:</span>
-                    <div class="controles">
-                        <div class="btn-group">
-                            <button class="funil-bg" onclick="alterar('${id}', 'funil', -10)">-10</button>
-                            <button class="funil-bg" onclick="alterar('${id}', 'funil', -5)">-5</button>
-                            <button class="funil-bg" onclick="alterar('${id}', 'funil', -2)">-2</button>
-                            <button class="funil-bg" onclick="alterar('${id}', 'funil', -1)">-1</button>
-                        </div>
-                        <span id="${id}-funil">${m.funil || 0}</span>
-                        <div class="btn-group">
-                            <button class="funil-bg" onclick="alterar('${id}', 'funil', 1)">+1</button>
-                            <button class="funil-bg" onclick="alterar('${id}', 'funil', 2)">+2</button>
-                            <button class="funil-bg" onclick="alterar('${id}', 'funil', 5)">+5</button>
-                            <button class="funil-bg" onclick="alterar('${id}', 'funil', 10)">+10</button>
-                        </div>
-                    </div>
-                </div>`;
-            
-            // Funil Reserva
-            if (config.mostrarReserva) {
-                maquinaHTML += `
-                    <div class="linha reserva">
-                        <span class="funil-label reserva-label"><i class="fas fa-warehouse"></i> Reserva:</span>
-                        <div class="controles">
-                            <div class="btn-group">
-                                <button class="funil-bg" onclick="alterar('${id}', 'funil_reserva', -10)">-10</button>
-                                <button class="funil-bg" onclick="alterar('${id}', 'funil_reserva', -5)">-5</button>
-                                <button class="funil-bg" onclick="alterar('${id}', 'funil_reserva', -2)">-2</button>
-                                <button class="funil-bg" onclick="alterar('${id}', 'funil_reserva', -1)">-1</button>
-                            </div>
-                            <span id="${id}-funil_reserva">${m.funil_reserva || 0}</span>
-                            <div class="btn-group">
-                                <button class="funil-bg" onclick="alterar('${id}', 'funil_reserva', 1)">+1</button>
-                                <button class="funil-bg" onclick="alterar('${id}', 'funil_reserva', 2)">+2</button>
-                                <button class="funil-bg" onclick="alterar('${id}', 'funil_reserva', 5)">+5</button>
-                                <button class="funil-bg" onclick="alterar('${id}', 'funil_reserva', 10)">+10</button>
-                            </div>
-                        </div>
-                    </div>`;
-            }
+            maquinaHTML += renderLinhaControle(id, "funil", "Funil", "fas fa-filter", "funil-bg", m.funil || 0);
+            if (config.mostrarReserva) maquinaHTML += renderLinhaControle(id, "funil_reserva", "Reserva", "fas fa-warehouse", "funil-bg", m.funil_reserva || 0, true);
         }
-        
-        // Mensagem de alerta se necessário
+
         if (alerta) {
             maquinaHTML += `
                 <div class="alert-message">
                     <i class="fas fa-exclamation-triangle"></i> Estoque em nível crítico (≤ ${config.estoqueMinimo} peças)
                 </div>`;
         }
-        
-        maquinaHTML += `</div>`;
-        painel.innerHTML += maquinaHTML;
+
+        maquinaHTML += `
+            </div>`;
+
+        painel.insertAdjacentHTML("beforeend", maquinaHTML);
     }
 
-    // Atualizar totais no painel
     atualizarTotais(totalMolde, totalBlank, totalNeckRing, totalFunil, totalCriticos);
+}
+
+function renderLinhaControle(maquinaId, tipo, rotulo, icone, classeBotao, valor, reserva = false) {
+    const labelClass = obterClasseLabel(tipo);
+    const reservaClass = reserva ? " reserva" : "";
+    const reservaLabelClass = reserva ? " reserva-label" : "";
+
+    return `
+        <div class="linha${reservaClass}">
+            <span class="${labelClass}${reservaLabelClass}"><i class="${icone}"></i> ${rotulo}:</span>
+            <div class="controles">
+                <div class="btn-group decrementos">
+                    <button class="${classeBotao}" onclick="alterar('${maquinaId}', '${tipo}', -10)">-10</button>
+                    <button class="${classeBotao}" onclick="alterar('${maquinaId}', '${tipo}', -5)">-5</button>
+                    <button class="${classeBotao}" onclick="alterar('${maquinaId}', '${tipo}', -2)">-2</button>
+                    <button class="${classeBotao}" onclick="alterar('${maquinaId}', '${tipo}', -1)">-1</button>
+                </div>
+                <div class="valor-controle">
+                    <span id="${maquinaId}-${tipo}">${valor}</span>
+                    <input type="number" class="input-digitado" id="input-${maquinaId}-${tipo}" value="${valor}"
+                           onblur="atualizarPorInput('${maquinaId}', '${tipo}', this.value)"
+                           onkeypress="if(event.key === 'Enter') { atualizarPorInput('${maquinaId}', '${tipo}', this.value); this.blur(); }">
+                </div>
+                <div class="btn-group incrementos">
+                    <button class="${classeBotao}" onclick="alterar('${maquinaId}', '${tipo}', 1)">+1</button>
+                    <button class="${classeBotao}" onclick="alterar('${maquinaId}', '${tipo}', 2)">+2</button>
+                    <button class="${classeBotao}" onclick="alterar('${maquinaId}', '${tipo}', 5)">+5</button>
+                    <button class="${classeBotao}" onclick="alterar('${maquinaId}', '${tipo}', 10)">+10</button>
+                </div>
+                <button class="btn-digitado" onclick="toggleModoDigitado('${maquinaId}', '${tipo}')" title="Digitar valor manualmente" aria-label="Digitar valor manualmente">
+                    <i class="fas fa-keyboard"></i>
+                </button>
+            </div>
+        </div>`;
+}
+
+function obterClasseLabel(tipo) {
+    if (tipo.startsWith("molde")) return "molde-label";
+    if (tipo.startsWith("blank")) return "blank-label";
+    if (tipo.startsWith("neck_ring")) return "neckring-label";
+    if (tipo.startsWith("funil")) return "funil-label";
+    return "molde-label";
+}
+
+function maquinaPertenceAoForno(maquinaId, forno) {
+    const id = String(maquinaId).trim().toUpperCase();
+    if (forno === "A") return /^A[1-6]$/.test(id);
+    if (forno === "B") return /^B[1-8]$/.test(id);
+    if (forno === "C") return /^C[1-8]$/.test(id);
+    if (forno === "D") return /^D1[0-5]$/.test(id) || /^1[0-5]$/.test(id);
+    return true;
+}
+
+function ordenarMaquinasPorId(a, b) {
+    const parse = (value) => {
+        const match = String(value).toUpperCase().match(/^([A-Z]*)(\d+)$/);
+        return match ? { prefixo: match[1] || "D", numero: Number(match[2]) } : { prefixo: String(value), numero: 0 };
+    };
+    const itemA = parse(a);
+    const itemB = parse(b);
+    if (itemA.prefixo !== itemB.prefixo) return itemA.prefixo.localeCompare(itemB.prefixo);
+    return itemA.numero - itemB.numero;
 }
 
 // ====================================================
@@ -752,20 +608,51 @@ function filtrar() {
 // ====================================================
 
 function filtrarPorForno(forno) {
-    fornoAtivo = forno;
-    
-    // Atualizar botões ativos
-    document.getElementById('btnTodos').classList.remove('active');
-    document.getElementById('btnFornoA').classList.remove('active');
-    document.getElementById('btnFornoB').classList.remove('active');
-    document.getElementById('btnFornoC').classList.remove('active');
-    document.getElementById('btnFornoD').classList.remove('active');
-    
-    document.getElementById(`btnForno${forno === 'todos' ? 'Todos' : forno}`).classList.add('active');
-    
-    // Aplicar filtro
+    const fornoNormalizado = ["A", "B", "C", "D"].includes(forno) ? forno : "todos";
+    fornoAtivo = fornoNormalizado;
+
+    const botoes = {
+        todos: document.getElementById("btnTodos"),
+        A: document.getElementById("btnFornoA"),
+        B: document.getElementById("btnFornoB"),
+        C: document.getElementById("btnFornoC"),
+        D: document.getElementById("btnFornoD")
+    };
+
+    Object.values(botoes).forEach(btn => {
+        if (btn) btn.classList.remove("active");
+    });
+
+    const botaoAtivo = botoes[fornoAtivo] || botoes.todos;
+    if (botaoAtivo) botaoAtivo.classList.add("active");
+
     filtrar();
 }
+
+function aplicarEstadoModoCompacto(notificar = true) {
+    const btn = document.getElementById("btnModoCompacto");
+    document.body.classList.toggle("modo-compacto", modoCompactoAtivo);
+
+    if (btn) {
+        btn.classList.toggle("active", modoCompactoAtivo);
+        btn.setAttribute("aria-pressed", String(modoCompactoAtivo));
+        btn.innerHTML = modoCompactoAtivo
+            ? '<i class="fas fa-up-right-and-down-left-from-center"></i> Modo Normal'
+            : '<i class="fas fa-compress-alt"></i> Modo Compacto';
+    }
+
+    if (notificar) {
+        mostrarNotificacao(modoCompactoAtivo ? "Modo compacto ativado" : "Modo compacto desativado", "info");
+    }
+}
+
+function alternarModoCompacto() {
+    modoCompactoAtivo = !modoCompactoAtivo;
+    localStorage.setItem("modoCompacto", String(modoCompactoAtivo));
+    aplicarEstadoModoCompacto(true);
+}
+
+window.alternarModoCompacto = alternarModoCompacto;
 
 // ====================================================
 // FUNÇÃO: ALTERNAR VISUALIZAÇÃO DE CRÍTICOS
