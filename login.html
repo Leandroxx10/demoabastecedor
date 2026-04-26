@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>WMoldes | Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <meta name="theme-color" content="#0ea5e9">
+    <link rel="manifest" href="manifest.webmanifest">
+</head>
+<body>
+    <div class="background-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+
+    <div class="preloader" id="preloader">
+        <div class="preloader-spinner"></div>
+    </div>
+
+    <div class="login-container">
+        <div class="login-icon">
+            <i class="fas fa-industry"></i>
+        </div>
+        <h2 class="login-title">WMoldes | Painel de Controle</h2>
+        <p class="login-subtitle">Sistema de gerenciamento de produção</p>
+        
+        <form class="login-form" id="loginForm">
+            <div class="input-group">
+                <i class="fas fa-envelope"></i>
+                <input type="email" class="login-input" id="email" placeholder="Digite seu email" required>
+            </div>
+            <div class="input-group">
+                <i class="fas fa-key"></i>
+                <input type="password" class="login-input" id="password" placeholder="Digite sua senha" required>
+            </div>
+            <div class="error-message" id="errorMessage">
+                <i class="fas fa-exclamation-circle"></i> Credenciais incorretas. Tente novamente.
+            </div>
+            <button type="submit" class="login-btn">
+                <i class="fas fa-lock-open"></i> Acessar Sistema
+            </button>
+        </form>
+        
+        <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--border); text-align: center;">
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 15px;">
+                Entre em contato com o administrador para obter acesso
+            </p>
+            <div style="display: flex; gap: 15px; justify-content: center; font-size: 0.85rem;">
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <i class="fas fa-user-shield" style="color: var(--error);"></i>
+                    <span style="color: var(--text-light);">Admin</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <i class="fas fa-user-tie" style="color: var(--warning);"></i>
+                    <span style="color: var(--text-light);">Liderança</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <i class="fas fa-user" style="color: var(--primary);"></i>
+                    <span style="color: var(--text-light);">Carregador</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
+    <script src="firebase-config.js"></script>
+    <script src="auth.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ocultar preloader após 1.5 segundos
+            setTimeout(() => {
+                document.getElementById('preloader').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('preloader').style.display = 'none';
+                }, 500);
+            }, 1500);
+            
+            // Configurar formulário de login
+            const loginForm = document.getElementById('loginForm');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            loginForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const email = emailInput.value.trim();
+                const password = passwordInput.value.trim();
+                
+                if (!email || !password) {
+                    mostrarErroLogin("Preencha todos os campos");
+                    return;
+                }
+                
+                const resultado = await login(email, password);
+                
+                if (resultado.success) {
+                    // Login bem-sucedido
+                    window.location.href = 'index.html';
+                } else {
+                    // Login falhou
+                    mostrarErroLogin(resultado.error);
+                }
+            });
+            
+            function mostrarErroLogin(mensagem) {
+                errorMessage.textContent = mensagem;
+                errorMessage.style.display = 'block';
+                passwordInput.classList.add('error');
+                
+                setTimeout(() => {
+                    passwordInput.classList.remove('error');
+                }, 1000);
+            }
+        });
+    </script>
+    <script src="pwa-register.js"></script>
+</body>
+</html>

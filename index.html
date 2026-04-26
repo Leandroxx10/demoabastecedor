@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>WMoldes | Painel de Controle</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="tutorial.css">
+    <meta name="theme-color" content="#0ea5e9">
+    <link rel="manifest" href="manifest.webmanifest">
+</head>
+<body>
+    <div class="background-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+
+    <div class="preloader" id="preloader">
+        <div class="preloader-spinner"></div>
+    </div>
+
+    <!-- Overlay do painel administrativo -->
+    <div class="painel-admin-overlay" id="adminOverlay"></div>
+
+    <!-- Painel administrativo secreto -->
+    <div class="painel-admin" id="painelAdmin">
+        <h2><i class="fas fa-user-shield"></i> Painel Administrativo</h2>
+        
+        <div class="config-group">
+            <h3><i class="fas fa-eye"></i> Visibilidade dos Itens</h3>
+            <div class="config-opcoes">
+                <label class="config-checkbox">
+                    <input type="checkbox" id="toggleReserva">
+                    <span>Mostrar Reservas</span>
+                </label>
+                <label class="config-checkbox">
+                    <input type="checkbox" id="toggleFunil">
+                    <span>Mostrar Funil</span>
+                </label>
+                <label class="config-checkbox">
+                    <input type="checkbox" id="toggleNeckring">
+                    <span>Mostrar Neck Ring</span>
+                </label>
+                <label class="config-checkbox">
+                    <input type="checkbox" id="toggleBlank">
+                    <span>Mostrar Blank</span>
+                </label>
+                <label class="config-checkbox">
+                    <input type="checkbox" id="toggleMolde">
+                    <span>Mostrar Molde</span>
+                </label>
+                <label class="config-checkbox">
+                    <input type="checkbox" id="togglePrefixo">
+                    <span>Mostrar Prefixos</span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="config-group">
+            <h3><i class="fas fa-palette"></i> Tema de Cores</h3>
+            <div class="temas-container">
+                <div class="tema-option tema-ciano active" onclick="selecionarTema('ciano')">
+                    <i class="fas fa-check"></i>
+                </div>
+                <div class="tema-option tema-verde" onclick="selecionarTema('verde')">
+                    <i class="fas fa-check"></i>
+                </div>
+                <div class="tema-option tema-roxo" onclick="selecionarTema('roxo')">
+                    <i class="fas fa-check"></i>
+                </div>
+                <div class="tema-option tema-vermelho" onclick="selecionarTema('vermelho')">
+                    <i class="fas fa-check"></i>
+                </div>
+                <div class="tema-option tema-laranja" onclick="selecionarTema('laranja')">
+                    <i class="fas fa-check"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="config-group">
+            <h3><i class="fas fa-cogs"></i> Configurações de Estoque</h3>
+            <div class="estoque-input-group">
+                <label>Estoque Mínimo:</label>
+                <input type="number" id="estoqueMinimo" class="estoque-input" min="1" max="50">
+                <span>peças</span>
+            </div>
+            <div class="config-opcoes">
+                <label class="config-checkbox">
+                    <input type="checkbox" id="toggleAlertas">
+                    <span>Alertas de Estoque Baixo</span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="config-group">
+            <h3><i class="fas fa-sliders-h"></i> Outras Configurações</h3>
+            <div class="config-opcoes">
+                <label class="config-checkbox">
+                    <input type="checkbox" id="toggleAnimacoes">
+                    <span>Animações</span>
+                </label>
+                <label class="config-checkbox">
+                    <input type="checkbox" id="autoAtualizar">
+                    <span>Atualização Automática</span>
+                </label>
+                <label class="config-checkbox">
+                    <input type="checkbox" id="mostrarTotais">
+                    <span>Mostrar Totais</span>
+                </label>
+                <label class="config-checkbox">
+                    <input type="checkbox" id="mostrarGraficos">
+                    <span>Mostrar Gráficos</span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="admin-botoes">
+            <button class="fechar" onclick="fecharPainelAdmin()">
+                <i class="fas fa-times"></i> Fechar
+            </button>
+            <button class="salvar" onclick="salvarConfiguracoes()">
+                <i class="fas fa-save"></i> Salvar Configurações
+            </button>
+        </div>
+    </div>
+
+    <!-- Tela de Login -->
+    <div class="login-container" id="loginScreen">
+        <div class="login-icon">
+            <i class="fas fa-industry"></i>
+        </div>
+        <h2 class="login-title">WMoldes | Painel de Controle</h2>
+        <p class="login-subtitle">Sistema de gerenciamento de produção</p>
+        
+        <form class="login-form" id="loginForm">
+            <div class="input-group">
+                <i class="fas fa-envelope"></i>
+                <input type="email" class="login-input" id="email" placeholder="Digite seu email" required>
+            </div>
+            <div class="input-group">
+                <i class="fas fa-key"></i>
+                <input type="password" class="login-input" id="password" placeholder="Digite sua senha" required>
+            </div>
+            <div class="error-message" id="errorMessage">
+                <i class="fas fa-exclamation-circle"></i> Credenciais incorretas. Tente novamente.
+            </div>
+            <button type="submit" class="login-btn">
+                <i class="fas fa-lock-open"></i> Acessar Sistema
+            </button>
+        </form>
+    </div>
+
+    <!-- Conteúdo Principal (inicialmente oculto) -->
+    <div class="container main-content" id="mainContent">
+        <!-- 
+        ====================================================
+        CABEÇALHO
+        ====================================================
+        -->
+        <header>
+            <h1 id="tituloPrincipal"><i class="fas fa-industry"></i> Painel de Controle de Produção</h1>
+            <p style="text-align: center; color: #94a3b8; margin-bottom: 30px; max-width: 800px; margin-left: auto; margin-right: auto;">
+                Monitoramento em tempo real da produção de moldes, blanks, neck rings e funis
+            </p>
+        </header>
+
+        <!-- 
+        ====================================================
+        BARRA DE CONTROLE SUPERIOR
+        ====================================================
+        -->
+        <div class="top-bar">
+            <div class="search-container">
+                <i class="fas fa-search"></i>
+                <input id="filtro" oninput="filtrar()" placeholder="Filtrar máquina (ex: A1)" type="text"/>
+            </div>
+            
+            <div class="button-group">
+                <button id="btnCriticos" onclick="alternarCriticos()">
+                    <i class="fas fa-exclamation-triangle"></i> Ver Críticos
+                </button>
+                
+                <button class="primary" onclick="recarregarDados()">
+                    <i class="fas fa-sync-alt"></i> Atualizar
+                </button>
+                
+                <button class="dark-mode-toggle" onclick="alternarModoEscuro()">
+                    <i class="fas fa-moon"></i> Modo Escuro
+                </button>
+                
+                <button class="pdf" onclick="gerarPDF()">
+                    <i class="fas fa-file-pdf"></i> Gerar Relatório
+                </button>
+
+                <button class="tutorial-btn" onclick="window.location.href='tutorial.html'">
+                    <i class="fas fa-graduation-cap"></i> Tutorial
+                </button>
+                
+                <button class="logout" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </button>
+            </div>
+        </div>
+
+        <!-- 
+        ====================================================
+        FILTROS POR FORNO
+        ====================================================
+        -->
+        <div class="filtro-fornos">
+            <button id="btnTodos" class="active" onclick="filtrarPorForno('todos')">
+                <i class="fas fa-layer-group"></i> Todos os Fornos
+            </button>
+            <button id="btnFornoA" onclick="filtrarPorForno('A')">
+                <i class="fas fa-fire"></i> Forno A (A1-A6)
+            </button>
+            <button id="btnFornoB" onclick="filtrarPorForno('B')">
+                <i class="fas fa-fire"></i> Forno B (B1-B8)
+            </button>
+            <button id="btnFornoC" onclick="filtrarPorForno('C')">
+                <i class="fas fa-fire"></i> Forno C (C1-C8)
+            </button>
+            <button id="btnFornoD" onclick="filtrarPorForno('D')">
+                <i class="fas fa-fire"></i> Forno D (D10-D15)
+            </button>
+        </div>
+
+        <!-- 
+        ====================================================
+        RESUMO DE TOTAIS
+        ====================================================
+        -->
+        <div id="totais">
+            <div class="total-item">
+                <div class="total-title"><i class="fas fa-box"></i> Total Moldes</div>
+                <div id="total-molde" class="total-valor">0</div>
+                <div class="total-sub">em todas as máquinas</div>
+            </div>
+            
+            <div class="total-item">
+                <div class="total-title"><i class="fas fa-box"></i> Total Blanks</div>
+                <div id="total-blank" class="total-valor">0</div>
+                <div class="total-sub">em todas as máquinas</div>
+            </div>
+            
+            <div class="total-item">
+                <div class="total-title"><i class="fas fa-ring"></i> Total Neck Rings</div>
+                <div id="total-neckring" class="total-valor">0</div>
+                <div class="total-sub">em todas as máquinas</div>
+            </div>
+            
+            <div class="total-item">
+                <div class="total-title"><i class="fas fa-filter"></i> Total Funis</div>
+                <div id="total-funil" class="total-valor">0</div>
+                <div class="total-sub">em todas as máquinas</div>
+            </div>
+            
+            <div class="total-item">
+                <div class="total-title"><i class="fas fa-exclamation-circle"></i> Máquinas Críticas</div>
+                <div id="total-criticos" class="total-valor">0</div>
+                <div class="total-sub">estoque ≤ <span id="estoqueMinimoLabel">3</span> peças</div>
+            </div>
+        </div>
+
+        <!-- 
+        ====================================================
+        SISTEMA DE ABAS
+        ====================================================
+        -->
+        <div class="tabs-container">
+            <div class="tabs-header">
+                <button class="tab-btn" onclick="openTab('dashboard')">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </button>
+                <button class="tab-btn active" onclick="openTab('controle')">
+                    <i class="fas fa-cogs"></i> Controle de Produção
+                </button>
+            </div>
+            
+            <div id="dashboard" class="tab-content">
+                <!-- 
+                ====================================================
+                GRÁFICOS
+                ====================================================
+                -->
+                <section class="graficos-container">
+                    <!-- Gráfico de produção atual -->
+                    <div class="grafico-card">
+                        <h2><i class="fas fa-chart-bar"></i> Estoque Atual por Máquina</h2>
+                        <canvas id="graficoProducao"></canvas>
+                    </div>
+
+                    <!-- Gráfico de estoque total (máquina + reserva) -->
+                    <div class="grafico-card">
+                        <h2><i class="fas fa-chart-line"></i> Estoque Total (Máquina + Reserva)</h2>
+                        <canvas id="graficoTotal"></canvas>
+                    </div>
+                </section>
+            </div>
+            
+            <div id="controle" class="tab-content active">
+                <!-- 
+                ====================================================
+                PAINEL DE MÁQUINAS
+                ====================================================
+                -->
+                <h2><i class="fas fa-cogs"></i> Controle por Máquina</h2>
+                <div id="painel" class="maquinas-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 
+    ====================================================
+    SCRIPTS
+    ====================================================
+    -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    
+    <script src="firebase-config.js"></script>
+    <script src="auth.js"></script>
+    <script src="script.js"></script>
+    <script src="pwa-register.js"></script>
+</body>
+</html>

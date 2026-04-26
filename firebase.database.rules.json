@@ -1,0 +1,42 @@
+{
+  "rules": {
+    ".read": "auth != null && root.child('users').child(auth.uid).child('isActive').val() !== false",
+    "maquinas": {
+      ".write": "auth != null && root.child('users').child(auth.uid).child('isActive').val() !== false"
+    },
+    "configuracoes": {
+      ".write": "auth != null && root.child('users').child(auth.uid).child('isActive').val() !== false"
+    },
+    "prefixDatabase": {
+      ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'"
+    },
+    "logs": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      "$logId": {
+        ".write": "auth != null && root.child('users').child(auth.uid).child('isActive').val() !== false",
+        ".validate": "newData.hasChildren(['user','action','timestamp'])"
+      }
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'"
+      }
+    },
+    "systemSettings": {
+      ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'"
+    },
+    "backups": {
+      ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'"
+    },
+    "adminConfig": {
+      ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'"
+    },
+    "manutencao": {
+      ".write": "auth != null && root.child('users').child(auth.uid).child('isActive').val() !== false"
+    },
+    "$other": {
+      ".write": "auth != null && root.child('users').child(auth.uid).child('isActive').val() !== false"
+    }
+  }
+}

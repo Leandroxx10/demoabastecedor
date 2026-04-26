@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Criar Usuários Firebase</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <meta name="theme-color" content="#0ea5e9">
+    <link rel="manifest" href="manifest.webmanifest">
+</head>
+<body>
+    <h2>Criando Usuários Firebase</h2>
+    <div id="status"></div>
+    
+    <script>
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyACjKi3thEvR4NJryXLWeXhA5Lpwc8f9cA",
+            authDomain: "painelinfomaq.firebaseapp.com",
+            databaseURL: "https://painelinfomaq-default-rtdb.firebaseio.com",
+            projectId: "painelinfomaq",
+            storageBucket: "painelinfomaq.firebasestorage.app",
+            messagingSenderId: "79791250650",
+            appId: "1:79791250650:web:9f0b0efeaaaf0e28a3d9e3"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        // Usuários para criar
+        const usuarios = [
+            {
+                email: "leandroadm@wmoldes.com",
+                password: "wmoldes",
+                nome: "Administrador",
+                role: "admin"
+            },
+            {
+                email: "lideranca@wmoldes.com",
+                password: "lider2026",
+                nome: "Liderança",
+                role: "lideranca"
+            },
+            {
+                email: "carregador@wmoldes.com",
+                password: "Caregador2026",
+                nome: "Abastecedor",
+                role: "carregador"
+            }
+        ];
+
+        // Elemento para mostrar status
+        const statusDiv = document.getElementById('status');
+
+        // Função para atualizar status
+        function atualizarStatus(mensagem, tipo = 'info') {
+            const p = document.createElement('p');
+            p.textContent = mensagem;
+            p.style.color = tipo === 'success' ? 'green' : 
+                           tipo === 'error' ? 'red' : 'blue';
+            statusDiv.appendChild(p);
+            console.log(mensagem);
+        }
+
+        // Função principal
+        async function criarUsuarios() {
+            atualizarStatus('🚀 Iniciando criação de usuários...');
+            
+            try {
+                for (let i = 0; i < usuarios.length; i++) {
+                    const usuario = usuarios[i];
+                    atualizarStatus(`📝 Criando: ${usuario.email}...`);
+                    
+                    // Criar usuário no Auth
+                    const userCredential = await auth.createUserWithEmailAndPassword(
+                        usuario.email, 
+                        usuario.password
+                    );
+                    
+                    const userId = userCredential.user.uid;
+                    atualizarStatus(`✅ Auth criado: ${usuario.email}`, 'success');
+                    
+                    // Salvar dados no Database
+                    const userData = {
+                        email: usuario.email,
+                        nome: usuario.nome,
+                        role: usuario.role,
+                        criadoEm: Date.now(),
+                        criadoPor: "script",
+                        ativo: true
+                    };
+                    
+                    await db.ref(`users/${userId}`).set(userData);
+                    atualizarStatus(`✅ Database atualizado: ${usuario.email}`, 'success');
+                    
+                    // Fazer logout
+                    await auth.signOut();
+                    atualizarStatus(`✅ Logout realizado`, 'info');
+                    
+                    // Aguardar 1 segundo
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                
+                atualizarStatus('🎉 TODOS OS USUÁRIOS CRIADOS COM SUCESSO!', 'success');
+                atualizarStatus('=========================================', 'info');
+                atualizarStatus('1. Leandroadm@wmoldes.com (wmoldes)', 'info');
+                atualizarStatus('2. lideranca@wmoldes.com (Lider@2026)', 'info');
+                atualizarStatus('3. carregador@wmoldes.com (Carregador2026)', 'info');
+                
+            } catch (error) {
+                atualizarStatus(`❌ ERRO: ${error.message}`, 'error');
+                
+                if (error.code === 'auth/email-already-in-use') {
+                    atualizarStatus('⚠️ Este email já está cadastrado', 'error');
+                } else if (error.code === 'auth/invalid-email') {
+                    atualizarStatus('⚠️ Email inválido', 'error');
+                } else if (error.code === 'auth/weak-password') {
+                    atualizarStatus('⚠️ Senha muito fraca (mínimo 6 caracteres)', 'error');
+                }
+            }
+        }
+
+        // Executar quando a página carregar
+        window.onload = function() {
+            atualizarStatus('⚠️ ANTES DE EXECUTAR:', 'info');
+            atualizarStatus('1. Vá no Firebase Console', 'info');
+            atualizarStatus('2. Authentication > Sign-in method', 'info');
+            atualizarStatus('3. Habilite "Email/Password"', 'info');
+            atualizarStatus('4. Clique no botão abaixo:', 'info');
+            
+            const button = document.createElement('button');
+            button.textContent = '👉 CLIQUE AQUI PARA CRIAR USUÁRIOS 👈';
+            button.style.padding = '15px';
+            button.style.fontSize = '16px';
+            button.style.margin = '20px 0';
+            button.style.backgroundColor = '#4CAF50';
+            button.style.color = 'white';
+            button.style.border = 'none';
+            button.style.borderRadius = '5px';
+            
+            button.onclick = criarUsuarios;
+            
+            statusDiv.appendChild(button);
+        }
+    </script>
+    <script src="pwa-register.js"></script>
+</body>
+</html>

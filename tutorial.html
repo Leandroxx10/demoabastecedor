@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>WMoldes | Tutorial Operacional</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="tutorial.css">
+    <meta name="theme-color" content="#0ea5e9">
+    <link rel="manifest" href="manifest.webmanifest">
+</head>
+<body class="tutorial-page">
+    <div class="background-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+
+    <main class="tutorial-shell">
+        <section class="tutorial-hero">
+            <div class="tutorial-badge"><i class="fas fa-graduation-cap"></i> Tutorial Profissional</div>
+            <h1>Como fazer o apontamento corretamente</h1>
+            <p>Guia visual para adicionar e remover quantidade, consultar o prefixo e navegar pelo painel com segurança operacional.</p>
+            <div class="tutorial-hero-actions">
+                <button class="primary" id="startTutorialBtn"><i class="fas fa-play"></i> Iniciar tutorial</button>
+                <button class="tutorial-ghost" onclick="window.location.href='index.html'"><i class="fas fa-arrow-left"></i> Voltar ao painel</button>
+            </div>
+        </section>
+
+        <section class="tutorial-layout">
+            <aside class="tutorial-sidebar">
+                <h2>Etapas</h2>
+                <div class="tutorial-progress"><span id="tutorialProgressBar"></span></div>
+                <ol id="tutorialStepsList">
+                    <li class="active" data-step="0">Visão geral do cartão</li>
+                    <li data-step="1">Adicionar quantidades</li>
+                    <li data-step="2">Remover quantidades</li>
+                    <li data-step="3">Digitação direta</li>
+                    <li data-step="4">Consultar prefixo</li>
+                    <li data-step="5">Boas práticas</li>
+                </ol>
+            </aside>
+
+            <section class="tutorial-stage-section">
+                <div class="tutorial-stage-header">
+                    <div>
+                        <span class="tutorial-step-label" id="tutorialStepLabel">Etapa 1</span>
+                        <h2 id="tutorialStepTitle">Visão geral do cartão</h2>
+                    </div>
+                    <div class="tutorial-nav-inline">
+                        <button id="prevStepBtn"><i class="fas fa-chevron-left"></i></button>
+                        <button id="nextStepBtn"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+
+                <p id="tutorialStepDescription" class="tutorial-description"></p>
+
+                <div class="tutorial-stage" id="tutorialStage">
+                    <div class="spotlight-ring" id="spotlightRing"></div>
+
+                    <div class="demo-card" id="demoCard">
+                        <div class="demo-card-header" id="demoHeader">
+                            <div class="demo-machine"><i class="fas fa-industry"></i> Máquina A3</div>
+                            <button class="demo-prefix-chip" id="demoPrefixChip"><i class="fas fa-tag"></i> PX-410-15</button>
+                        </div>
+
+                        <div class="demo-line" id="demoLineMolde">
+                            <span class="demo-label"><i class="fas fa-cube"></i> Molde</span>
+                            <div class="demo-controls">
+                                <div class="demo-btn-group" id="demoRemoveGroup">
+                                    <button>-10</button><button>-5</button><button>-2</button><button>-1</button>
+                                </div>
+                                <div class="demo-value-stack">
+                                    <span class="demo-value" id="demoValue">12</span>
+                                    <input class="demo-input" id="demoInput" type="number" value="12"/>
+                                </div>
+                                <div class="demo-btn-group" id="demoAddGroup">
+                                    <button>+1</button><button>+2</button><button>+5</button><button>+10</button>
+                                </div>
+                                <button class="demo-keyboard-btn" id="demoKeyboardBtn"><i class="fas fa-keyboard"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="demo-prefix-panel" id="demoPrefixPanel">
+                            <div class="demo-prefix-grid">
+                                <div><strong>Processo</strong><span>DG</span></div>
+                                <div><strong>Corredor</strong><span>07</span></div>
+                                <div><strong>Prateleira</strong><span>P3</span></div>
+                                <div><strong>Neck Ring</strong><span>FE-15</span></div>
+                                <div><strong>Blank</strong><span>BK-220</span></div>
+                                <div><strong>Molde</strong><span>MD-440</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tutorial-callout" id="tutorialCallout">
+                    Observe a área destacada. O tutorial sempre mantém foco no elemento em uso para reduzir erro operacional.
+                </div>
+            </section>
+        </section>
+    </main>
+
+    <script src="tutorial.js"></script>
+    <script src="pwa-register.js"></script>
+</body>
+</html>
