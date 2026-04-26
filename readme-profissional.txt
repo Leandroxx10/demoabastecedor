@@ -25,3 +25,15 @@ Deploy:
 2. Publique as regras em firebase.database.rules.json no Realtime Database.
 3. Confirme que os links de imagem dos prefixos estão em campos como imageUrl, imagem, imgbb ou linkImagem.
 4. Abra a aplicação no navegador, valide o botão Tutorial e instale como app se desejar.
+
+
+ALTERAÇÕES DA VERSÃO MULTISELECT + CADASTRO
+- Filtro de fornos agora é multiselect: A, B, C e D podem ser combinados.
+- Botão "Todos os Fornos" limpa a seleção e volta a exibir tudo.
+- Modo compacto: remove o texto "Máquina" do cabeçalho, deixando apenas o código.
+- Modo compacto: reduz o espaço entre rótulo, valor e botão de teclado nos cards.
+- Novo arquivo cadastro-usuario.html:
+  - Tela HTML independente para criação de usuários.
+  - Modal visual de confirmação.
+  - Criação no Firebase Authentication.
+  - Registro complementar em users/{uid} no Realtime Database.

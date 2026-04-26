@@ -491,6 +491,31 @@ h2 {
 .filtro-fornos button.active i {
     color: white;
 }
+.filtro-fornos button {
+    position: relative;
+}
+
+.filtro-fornos button:not(#btnTodos).active::after {
+    content: "✓";
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.22);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.filtro-fornos::after {
+    content: "Seleção múltipla: clique em mais de um forno para combinar filtros.";
+    flex-basis: 100%;
+    font-size: 0.78rem;
+    color: #64748b;
+    margin-top: 4px;
+}
+
 
 /* ========== TABS ========== */
 .tabs-container {
@@ -1954,5 +1979,54 @@ body.modo-compacto .alert-message {
 
     body.modo-compacto .maquinas-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+
+/* Ajustes solicitados para o modo compacto */
+body.modo-compacto .maquina-id .maquina-texto {
+    display: none;
+}
+
+body.modo-compacto .maquina-id {
+    gap: 6px;
+}
+
+body.modo-compacto .maquina-id .maquina-codigo {
+    font-weight: 800;
+}
+
+body.modo-compacto .linha {
+    display: grid;
+    grid-template-columns: minmax(108px, max-content) 1fr;
+    column-gap: 10px;
+    align-items: center;
+}
+
+body.modo-compacto .controles {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    justify-items: end;
+    align-items: center;
+}
+
+body.modo-compacto .valor-controle {
+    min-width: 30px;
+    align-items: end;
+}
+
+body.modo-compacto .controles span {
+    min-width: 24px;
+    text-align: right;
+}
+
+body.modo-compacto .input-digitado {
+    width: 58px;
+}
+
+@media (min-width: 769px) {
+    body.modo-compacto .maquinas-grid {
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
     }
 }

@@ -26,7 +26,7 @@ let config = {
 };
 
 // Configuração de filtro por forno
-let fornoAtivo = 'todos';
+let fornosAtivos = new Set();
 let modoCompactoAtivo = localStorage.getItem('modoCompacto') === 'true';
 let clicksTitulo = 0;
 let timeoutClicks = null;
@@ -295,8 +295,10 @@ function criarPainel(maquinas) {
         );
     }
 
-    if (fornoAtivo !== "todos") {
-        maquinasFiltradas = maquinasFiltradas.filter(([id]) => maquinaPertenceAoForno(id, fornoAtivo));
+    if (fornosAtivos.size > 0) {
+        maquinasFiltradas = maquinasFiltradas.filter(([id]) =>
+            Array.from(fornosAtivos).some(forno => maquinaPertenceAoForno(id, forno))
+        );
     }
 
     maquinasFiltradas.sort((a, b) => ordenarMaquinasPorId(a[0], b[0]));
@@ -320,7 +322,7 @@ function criarPainel(maquinas) {
         let maquinaHTML = `
             <div class="maquina ${alerta ? "alerta" : ""}">
                 <div class="maquina-header">
-                    <div class="maquina-id"><i class="fas fa-industry"></i> Máquina ${id}</div>`;
+                    <div class="maquina-id"><i class="fas fa-industry"></i> <span class="maquina-texto">Máquina</span><span class="maquina-codigo">${id}</span></div>`;
 
         if (config.mostrarPrefixo) {
             const currentPrefixo = m.prefixo || "";
@@ -608,9 +610,6 @@ function filtrar() {
 // ====================================================
 
 function filtrarPorForno(forno) {
-    const fornoNormalizado = ["A", "B", "C", "D"].includes(forno) ? forno : "todos";
-    fornoAtivo = fornoNormalizado;
-
     const botoes = {
         todos: document.getElementById("btnTodos"),
         A: document.getElementById("btnFornoA"),
@@ -619,12 +618,26 @@ function filtrarPorForno(forno) {
         D: document.getElementById("btnFornoD")
     };
 
-    Object.values(botoes).forEach(btn => {
-        if (btn) btn.classList.remove("active");
-    });
+    if (forno === "todos") {
+        fornosAtivos.clear();
+    } else if (["A", "B", "C", "D"].includes(forno)) {
+        if (fornosAtivos.has(forno)) {
+            fornosAtivos.delete(forno);
+        } else {
+            fornosAtivos.add(forno);
+        }
+    }
 
-    const botaoAtivo = botoes[fornoAtivo] || botoes.todos;
-    if (botaoAtivo) botaoAtivo.classList.add("active");
+    Object.entries(botoes).forEach(([chave, btn]) => {
+        if (!btn) return;
+
+        const ativo = chave === "todos"
+            ? fornosAtivos.size === 0
+            : fornosAtivos.has(chave);
+
+        btn.classList.toggle("active", ativo);
+        btn.setAttribute("aria-pressed", String(ativo));
+    });
 
     filtrar();
 }

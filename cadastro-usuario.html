@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>WMoldes | Cadastro de Usuários</title>
+    <meta name="theme-color" content="#0ea5e9">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #0ea5e9;
+            --primary-dark: #0284c7;
+            --bg: #eef6fb;
+            --card: #ffffff;
+            --text: #1e293b;
+            --muted: #64748b;
+            --border: #dbe7f1;
+            --error: #ef4444;
+            --success: #10b981;
+            --shadow: 0 24px 80px rgba(15, 23, 42, .18);
+            --radius: 22px;
+            font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(14,165,233,.18), transparent 36%),
+                linear-gradient(135deg, #e0f2fe 0%, #f8fafc 58%, #eaf6ff 100%);
+            display: grid;
+            place-items: center;
+            padding: 24px;
+        }
+
+        .page-shell {
+            width: min(1100px, 100%);
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            gap: 26px;
+            align-items: center;
+        }
+
+        .hero {
+            background: rgba(255,255,255,.72);
+            border: 1px solid rgba(219,231,241,.85);
+            border-radius: var(--radius);
+            padding: 34px;
+            box-shadow: 0 20px 60px rgba(15, 23, 42, .08);
+            backdrop-filter: blur(12px);
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--primary-dark);
+            background: #e0f2fe;
+            border: 1px solid #bae6fd;
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: .9rem;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 4vw, 3.4rem);
+            line-height: 1.02;
+            letter-spacing: -1.2px;
+            margin: 22px 0 16px;
+        }
+
+        .hero p {
+            color: var(--muted);
+            font-size: 1.05rem;
+            max-width: 620px;
+        }
+
+        .feature-list {
+            margin-top: 26px;
+            display: grid;
+            gap: 12px;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #334155;
+            font-weight: 600;
+        }
+
+        .feature i {
+            width: 34px;
+            height: 34px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            color: var(--primary);
+            background: #e0f2fe;
+        }
+
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 24px 24px 18px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, #ffffff, #f8fbff);
+        }
+
+        .panel-header h2 {
+            margin: 0;
+            font-size: 1.35rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-header p {
+            margin: 8px 0 0;
+            color: var(--muted);
+            font-size: .92rem;
+        }
+
+        form {
+            padding: 24px;
+            display: grid;
+            gap: 16px;
+        }
+
+        label {
+            display: grid;
+            gap: 7px;
+            color: #334155;
+            font-weight: 700;
+            font-size: .9rem;
+        }
+
+        .input-wrap {
+            position: relative;
+        }
+
+        .input-wrap i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        input, select {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 13px 14px 13px 42px;
+            font: inherit;
+            color: var(--text);
+            background: #f8fafc;
+            outline: none;
+            transition: .2s ease;
+        }
+
+        select { padding-left: 14px; }
+
+        input:focus, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(14,165,233,.14);
+            background: #ffffff;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 4px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 14px;
+            padding: 13px 16px;
+            font: inherit;
+            font-weight: 800;
+            cursor: pointer;
+            transition: .2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+        }
+
+        .btn-primary {
+            flex: 1;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: 0 12px 30px rgba(14, 165, 233, .28);
+        }
+
+        .btn-primary:hover { transform: translateY(-1px); }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid var(--border);
+        }
+
+        .hint {
+            color: var(--muted);
+            font-size: .82rem;
+            line-height: 1.4;
+            margin-top: -6px;
+        }
+
+        .toast {
+            min-height: 48px;
+            border-radius: 14px;
+            padding: 12px 14px;
+            display: none;
+            align-items: flex-start;
+            gap: 10px;
+            font-weight: 700;
+            line-height: 1.35;
+        }
+
+        .toast.show { display: flex; }
+        .toast.success { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+        .toast.error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+        .toast.info { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, .56);
+            display: none;
+            place-items: center;
+            padding: 24px;
+            z-index: 50;
+        }
+
+        .modal-backdrop.show { display: grid; }
+
+        .modal {
+            width: min(460px, 100%);
+            background: white;
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            animation: modalIn .22s ease-out;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: translateY(12px) scale(.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .modal-top {
+            padding: 24px;
+            background: linear-gradient(135deg, #0ea5e9, #0369a1);
+            color: white;
+        }
+
+        .modal-top h3 {
+            margin: 0;
+            font-size: 1.35rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-body {
+            padding: 24px;
+            color: #334155;
+        }
+
+        .modal-body dl {
+            margin: 0;
+            display: grid;
+            gap: 10px;
+        }
+
+        .modal-body div {
+            display: grid;
+            grid-template-columns: 90px 1fr;
+            gap: 10px;
+        }
+
+        .modal-body dt {
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .modal-body dd {
+            margin: 0;
+            font-weight: 800;
+            word-break: break-word;
+        }
+
+        .modal-actions {
+            padding: 0 24px 24px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        @media (max-width: 900px) {
+            .page-shell { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <main class="page-shell">
+        <section class="hero">
+            <span class="hero-badge"><i class="fas fa-user-shield"></i> Cadastro administrativo</span>
+            <h1>Criação de usuários do sistema WMoldes.</h1>
+            <p>Use esta página para cadastrar e-mail, senha, nome e perfil de acesso no Firebase Authentication e no Realtime Database.</p>
+
+            <div class="feature-list">
+                <div class="feature"><i class="fas fa-lock"></i> Cria a conta no Firebase Auth</div>
+                <div class="feature"><i class="fas fa-database"></i> Registra os dados em <code>users/{uid}</code></div>
+                <div class="feature"><i class="fas fa-window-restore"></i> Modal de confirmação após o cadastro</div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-user-plus"></i> Novo usuário</h2>
+                <p>Preencha os dados abaixo e clique em cadastrar.</p>
+            </div>
+
+            <form id="userForm">
+                <label>
+                    Nome completo
+                    <div class="input-wrap">
+                        <i class="fas fa-id-card"></i>
+                        <input id="nome" type="text" placeholder="Ex: João Silva" required>
+                    </div>
+                </label>
+
+                <label>
+                    E-mail
+                    <div class="input-wrap">
+                        <i class="fas fa-envelope"></i>
+                        <input id="email" type="email" placeholder="usuario@wmoldes.com" required>
+                    </div>
+                </label>
+
+                <div class="row">
+                    <label>
+                        Senha
+                        <div class="input-wrap">
+                            <i class="fas fa-key"></i>
+                            <input id="senha" type="password" placeholder="Mín. 6 caracteres" minlength="6" required>
+                        </div>
+                    </label>
+
+                    <label>
+                        Perfil
+                        <select id="role" required>
+                            <option value="admin">Administrador</option>
+                            <option value="lideranca">Liderança</option>
+                            <option value="carregador">Abastecedor</option>
+                            <option value="visualizacao">Visualização</option>
+                        </select>
+                    </label>
+                </div>
+
+                <p class="hint">Recomendado: abra esta página apenas para administradores. Ela usa um app secundário do Firebase para criar o usuário sem derrubar a sessão atual.</p>
+
+                <div id="toast" class="toast"></div>
+
+                <div class="actions">
+                    <button type="button" class="btn-secondary" onclick="document.getElementById('userForm').reset()">
+                        <i class="fas fa-eraser"></i> Limpar
+                    </button>
+                    <button id="submitBtn" type="submit" class="btn-primary">
+                        <i class="fas fa-user-plus"></i> Cadastrar usuário
+                    </button>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <div id="successModal" class="modal-backdrop" role="dialog" aria-modal="true">
+        <div class="modal">
+            <div class="modal-top">
+                <h3><i class="fas fa-circle-check"></i> Usuário cadastrado</h3>
+            </div>
+            <div class="modal-body">
+                <dl>
+                    <div><dt>Nome</dt><dd id="modalNome"></dd></div>
+                    <div><dt>E-mail</dt><dd id="modalEmail"></dd></div>
+                    <div><dt>Perfil</dt><dd id="modalRole"></dd></div>
+                </dl>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-primary" type="button" onclick="fecharModal()">
+                    <i class="fas fa-check"></i> Concluir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="firebase-config.js"></script>
+    <script>
+        const form = document.getElementById("userForm");
+        const submitBtn = document.getElementById("submitBtn");
+        const toast = document.getElementById("toast");
+
+        function showToast(message, type = "info") {
+            toast.className = `toast show ${type}`;
+            toast.innerHTML = `<i class="fas ${type === "success" ? "fa-circle-check" : type === "error" ? "fa-circle-exclamation" : "fa-circle-info"}"></i><span>${message}</span>`;
+        }
+
+        function traduzirErro(error) {
+            const map = {
+                "auth/email-already-in-use": "Este e-mail já está cadastrado.",
+                "auth/invalid-email": "O e-mail informado é inválido.",
+                "auth/weak-password": "A senha está fraca. Use pelo menos 6 caracteres.",
+                "auth/operation-not-allowed": "Ative Email/Password em Firebase Authentication > Sign-in method."
+            };
+            return map[error.code] || error.message || "Erro inesperado ao cadastrar usuário.";
+        }
+
+        function abrirModal(user) {
+            document.getElementById("modalNome").textContent = user.nome;
+            document.getElementById("modalEmail").textContent = user.email;
+            document.getElementById("modalRole").textContent = user.role;
+            document.getElementById("successModal").classList.add("show");
+        }
+
+        function fecharModal() {
+            document.getElementById("successModal").classList.remove("show");
+        }
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const nome = document.getElementById("nome").value.trim();
+            const email = document.getElementById("email").value.trim().toLowerCase();
+            const senha = document.getElementById("senha").value;
+            const role = document.getElementById("role").value;
+
+            if (!nome || !email || !senha || !role) {
+                showToast("Preencha todos os campos.", "error");
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cadastrando...';
+            showToast("Criando usuário no Firebase...", "info");
+
+            let secondaryApp = null;
+
+            try {
+                secondaryApp = firebase.initializeApp(firebaseConfig, `cadastro-${Date.now()}`);
+                const secondaryAuth = secondaryApp.auth();
+
+                const credential = await secondaryAuth.createUserWithEmailAndPassword(email, senha);
+                const uid = credential.user.uid;
+
+                const userData = {
+                    nome,
+                    email,
+                    role,
+                    ativo: true,
+                    criadoEm: Date.now(),
+                    atualizadoEm: Date.now(),
+                    origem: "cadastro-usuario.html"
+                };
+
+                await db.ref(`users/${uid}`).set(userData);
+                await secondaryAuth.signOut();
+                await secondaryApp.delete();
+
+                showToast("Usuário cadastrado com sucesso.", "success");
+                abrirModal(userData);
+                form.reset();
+            } catch (error) {
+                if (secondaryApp) {
+                    try { await secondaryApp.delete(); } catch (_) {}
+                }
+                showToast(traduzirErro(error), "error");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-user-plus"></i> Cadastrar usuário';
+            }
+        });
+
+        window.fecharModal = fecharModal;
+    </script>
+    <script src="pwa-register.js"></script>
+</body>
+</html>
