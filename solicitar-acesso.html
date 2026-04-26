@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>WMoldes | Solicitar Acesso</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <meta name="theme-color" content="#0ea5e9">
+    <link rel="manifest" href="manifest.webmanifest">
+</head>
+<body class="access-page">
+    <div class="background-shapes access-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+        <div class="shape shape-4"></div>
+    </div>
+
+    <main class="access-wrapper" aria-label="Solicitar acesso ao sistema">
+        <section class="access-card">
+            <div class="access-card-glow"></div>
+
+            <a class="access-back" href="login.html" aria-label="Voltar para o login">
+                <i class="fas fa-arrow-left"></i>
+                Voltar ao login
+            </a>
+
+            <div class="access-hero-icon" aria-hidden="true">
+                <i class="fas fa-user-lock"></i>
+            </div>
+
+            <span class="access-badge">
+                <i class="fas fa-shield-halved"></i>
+                Acesso controlado
+            </span>
+
+            <h1 class="access-title">Solicitar acesso</h1>
+            <p class="access-description">
+                Para liberar seu acesso ao painel WMoldes, entre em contato diretamente com o responsável pelo sistema.
+            </p>
+
+            <div class="developer-panel">
+                <div class="developer-avatar" aria-hidden="true">
+                    <i class="fas fa-code"></i>
+                </div>
+                <div>
+                    <p class="developer-label">Desenvolvedor</p>
+                    <h2 class="developer-name">Leandro Moura</h2>
+                </div>
+            </div>
+
+            <div class="contact-grid">
+                <a class="whatsapp-action" href="https://wa.me/5511963290107?text=Ol%C3%A1%2C%20gostaria%20de%20solicitar%20acesso%20ao%20sistema%20WMoldes." target="_blank" rel="noopener noreferrer">
+                    <span class="whatsapp-icon">
+                        <i class="fab fa-whatsapp"></i>
+                    </span>
+                    <span>
+                        <strong>WhatsApp</strong>
+                        <small>11 96329-0107</small>
+                    </span>
+                    <i class="fas fa-arrow-up-right-from-square"></i>
+                </a>
+
+                <div class="qr-panel">
+                    <div class="qr-frame">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=10&data=https%3A%2F%2Fwa.me%2F5511963290107%3Ftext%3DOl%25C3%25A1%252C%2520gostaria%2520de%2520solicitar%2520acesso%2520ao%2520sistema%2520WMoldes." alt="QR Code para abrir o WhatsApp de Leandro Moura">
+                    </div>
+                    <p>Escaneie o QR Code para abrir a conversa no WhatsApp.</p>
+                </div>
+            </div>
+
+            <div class="access-footer-note">
+                <i class="fas fa-circle-info"></i>
+                Informe seu nome, setor e motivo da solicitação para agilizar a liberação.
+            </div>
+        </section>
+    </main>
+
+    <script src="pwa-register.js"></script>
+</body>
+</html>

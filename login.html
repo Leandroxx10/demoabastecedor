@@ -44,23 +44,16 @@
             </button>
         </form>
         
-        <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--border); text-align: center;">
-            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 15px;">
-                Entre em contato com o administrador para obter acesso
-            </p>
-            <div style="display: flex; gap: 15px; justify-content: center; font-size: 0.85rem;">
-                <div style="display: flex; align-items: center; gap: 5px;">
-                    <i class="fas fa-user-shield" style="color: var(--error);"></i>
-                    <span style="color: var(--text-light);">Admin</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 5px;">
-                    <i class="fas fa-user-tie" style="color: var(--warning);"></i>
-                    <span style="color: var(--text-light);">Liderança</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 5px;">
-                    <i class="fas fa-user" style="color: var(--primary);"></i>
-                    <span style="color: var(--text-light);">Carregador</span>
-                </div>
+        <div class="login-access-area">
+            <p>Nao possui acesso ao sistema?</p>
+            <a class="request-access-link" href="solicitar-acesso.html">
+                <i class="fab fa-whatsapp"></i>
+                Solicitar acesso
+            </a>
+            <div class="login-role-list">
+                <div><i class="fas fa-user-shield admin"></i><span>Admin</span></div>
+                <div><i class="fas fa-user-tie leader"></i><span>Lideranca</span></div>
+                <div><i class="fas fa-user loader"></i><span>Carregador</span></div>
             </div>
         </div>
     </div>
