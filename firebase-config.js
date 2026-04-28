@@ -317,10 +317,91 @@ function sanitizeForLog(value) {
     }
 }
 
+function formatLocalAuditDate(timestamp = Date.now()) {
+    const d = new Date(timestamp);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+
+// Controle local para evitar logs duplicados quando o mesmo evento é disparado mais de uma vez
+// no mesmo carregamento da página (onclick + listener/retry/cache do navegador).
+const auditDedupWindowMs = 3000;
+const recentAuditSignatures = new Map();
+
+function safeAuditKey(value) {
+    return String(value || '')
+        .replace(/[.#$/\[\]]/g, '_')
+        .replace(/[^a-zA-Z0-9_:-]/g, '_')
+        .slice(0, 180);
+}
+
+function hashAuditText(text) {
+    let hash = 5381;
+    for (let i = 0; i < text.length; i++) {
+        hash = ((hash << 5) + hash) + text.charCodeAt(i);
+        hash = hash & 0xffffffff;
+    }
+    return Math.abs(hash).toString(36);
+}
+
+function getAuditMinuteBucket(timestamp) {
+    return Math.floor(timestamp / 60000);
+}
+
+function buildAuditSignature(payload, timestamp = Date.now()) {
+    const extra = payload.extra || {};
+    return [
+        getAuditMinuteBucket(timestamp),
+        payload.entityType || '',
+        payload.entityId || '',
+        payload.targetPath || '',
+        payload.action || '',
+        JSON.stringify(payload.before ?? null),
+        JSON.stringify(payload.after ?? null),
+        extra.field || '',
+        extra.origem || ''
+    ].join('|');
+}
+
+function buildAuditFingerprint(payload, timestamp = Date.now()) {
+    const extra = payload.extra || {};
+    const base = buildAuditSignature(payload, timestamp);
+    const machine = safeAuditKey(extra.machineId || payload.entityId || 'geral');
+    const field = safeAuditKey(extra.field || payload.entityType || 'evento');
+    const bucket = getAuditMinuteBucket(timestamp);
+    return safeAuditKey(`${bucket}_${machine}_${field}_${hashAuditText(base)}`);
+}
+
+function shouldSkipDuplicateAudit(payload, timestamp) {
+    const signature = buildAuditSignature(payload, timestamp);
+    const previousTimestamp = recentAuditSignatures.get(signature);
+
+    if (previousTimestamp && (timestamp - previousTimestamp) < auditDedupWindowMs) {
+        console.warn('⚠️ Log duplicado ignorado:', signature);
+        return true;
+    }
+
+    recentAuditSignatures.set(signature, timestamp);
+
+    recentAuditSignatures.forEach((value, key) => {
+        if ((timestamp - value) > 60000) {
+            recentAuditSignatures.delete(key);
+        }
+    });
+
+    return false;
+}
+
 async function writeAuditLog({ action, details = '', targetPath = '', entityType = '', entityId = '', before = null, after = null, extra = {} }) {
     try {
         const actor = getAuditUser();
         const timestamp = Date.now();
+        const safeBefore = sanitizeForLog(before);
+        const safeAfter = sanitizeForLog(after);
+        const safeExtra = sanitizeForLog(extra);
         const payload = {
             user: actor.email,
             uid: actor.uid,
@@ -329,13 +410,38 @@ async function writeAuditLog({ action, details = '', targetPath = '', entityType
             entityType,
             entityId,
             targetPath,
-            before: sanitizeForLog(before),
-            after: sanitizeForLog(after),
-            extra: sanitizeForLog(extra),
+            before: safeBefore,
+            after: safeAfter,
+            extra: safeExtra,
             timestamp,
-            date: new Date(timestamp).toISOString().split('T')[0]
+            date: formatLocalAuditDate(timestamp)
         };
-        await db.ref('logs').push(payload);
+
+        const fingerprint = buildAuditFingerprint(payload, timestamp);
+        payload.fingerprint = fingerprint;
+
+        if (shouldSkipDuplicateAudit(payload, timestamp)) {
+            return;
+        }
+
+        // Chave determinística: impede que o mesmo evento gere 2 ou 3 pontos no mesmo horário.
+        const logRef = db.ref('logs').child(fingerprint);
+        const logTransaction = await logRef.transaction(current => current || payload);
+
+        if (!logTransaction.committed) {
+            console.warn('⚠️ Log duplicado ignorado no Firebase:', fingerprint);
+            return;
+        }
+
+        if ((entityType === 'machine_change' || entityType === 'machine_prefix') && historicoRef) {
+            await historicoRef.child(fingerprint).set({
+                ...payload,
+                machineId: safeExtra?.machineId || entityId || '',
+                field: safeExtra?.field || '',
+                origem: safeExtra?.origem || 'sistema',
+                path: targetPath
+            });
+        }
     } catch (error) {
         console.error('❌ Erro ao registrar auditoria:', error);
     }
