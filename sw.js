@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wmoldes-pwa-v20';
+const CACHE_NAME = 'wmoldes-pwa-v1';
 const OFFLINE_URLS = [
   '/',
   '/index.html',

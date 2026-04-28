@@ -433,39 +433,9 @@
                 "auth/email-already-in-use": "Este e-mail já está cadastrado.",
                 "auth/invalid-email": "O e-mail informado é inválido.",
                 "auth/weak-password": "A senha está fraca. Use pelo menos 6 caracteres.",
-                "auth/operation-not-allowed": "Ative Email/Password em Firebase Authentication > Sign-in method.",
-                "PERMISSION_DENIED": "Permissão negada no Realtime Database. Faça login com uma conta administradora antes de cadastrar usuários.",
-                "permission-denied": "Permissão negada no Realtime Database. Faça login com uma conta administradora antes de cadastrar usuários."
+                "auth/operation-not-allowed": "Ative Email/Password em Firebase Authentication > Sign-in method."
             };
             return map[error.code] || error.message || "Erro inesperado ao cadastrar usuário.";
-        }
-
-        function aguardarUsuarioLogado() {
-            return new Promise((resolve, reject) => {
-                const unsubscribe = auth.onAuthStateChanged((user) => {
-                    unsubscribe();
-                    resolve(user || null);
-                }, reject);
-            });
-        }
-
-        async function validarAdministradorAtual() {
-            const currentUser = await aguardarUsuarioLogado();
-
-            if (!currentUser) {
-                throw new Error("Faça login com uma conta administradora antes de cadastrar usuários.");
-            }
-
-            const snapshot = await db.ref(`users/${currentUser.uid}`).once("value");
-            const userData = snapshot.val() || {};
-            const role = typeof normalizeRole === "function" ? normalizeRole(userData.role) : String(userData.role || "").toLowerCase();
-            const isActive = userData.isActive !== false && userData.ativo !== false;
-
-            if (role !== "admin" || !isActive) {
-                throw new Error("Apenas administradores ativos podem cadastrar novos usuários.");
-            }
-
-            return currentUser;
         }
 
         function abrirModal(user) {
@@ -497,34 +467,21 @@
             showToast("Criando usuário no Firebase...", "info");
 
             let secondaryApp = null;
-            let secondaryAuth = null;
-            let createdAuthUser = null;
 
             try {
-                const adminUser = await validarAdministradorAtual();
-
                 secondaryApp = firebase.initializeApp(firebaseConfig, `cadastro-${Date.now()}`);
-                secondaryAuth = secondaryApp.auth();
+                const secondaryAuth = secondaryApp.auth();
 
                 const credential = await secondaryAuth.createUserWithEmailAndPassword(email, senha);
-                createdAuthUser = credential.user;
-                const uid = createdAuthUser.uid;
-                const now = Date.now();
+                const uid = credential.user.uid;
 
                 const userData = {
                     nome,
-                    name: nome,
                     email,
                     role,
-                    isActive: true,
                     ativo: true,
-                    createdAt: now,
-                    criadoEm: now,
-                    updatedAt: now,
-                    atualizadoEm: now,
-                    createdBy: adminUser.email || adminUser.uid,
-                    criadoPor: adminUser.email || adminUser.uid,
-                    lastLogin: null,
+                    criadoEm: Date.now(),
+                    atualizadoEm: Date.now(),
                     origem: "cadastro-usuario.html"
                 };
 
@@ -536,12 +493,6 @@
                 abrirModal(userData);
                 form.reset();
             } catch (error) {
-                if (createdAuthUser && error && (error.code === "PERMISSION_DENIED" || error.code === "permission-denied" || /permission/i.test(error.message || ""))) {
-                    try { await createdAuthUser.delete(); } catch (_) {}
-                }
-                if (secondaryAuth) {
-                    try { await secondaryAuth.signOut(); } catch (_) {}
-                }
                 if (secondaryApp) {
                     try { await secondaryApp.delete(); } catch (_) {}
                 }
