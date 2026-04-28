@@ -258,55 +258,95 @@ async function carregarUsuarios() {
 
 async function criarUsuario(e) {
     e.preventDefault();
-    
-    const email = document.getElementById('newEmail')?.value.trim();
+
+    const email = document.getElementById('newEmail')?.value.trim().toLowerCase();
     const password = document.getElementById('newPassword')?.value;
-    const role = document.getElementById('newRole')?.value;
+    const role = normalizeRole(document.getElementById('newRole')?.value || 'carregador');
     const name = document.getElementById('newName')?.value.trim();
-    
+
     if (!email || !password) {
         mostrarNotificacaoAdmin("Preencha todos os campos obrigatórios", "error");
         return;
     }
-    
+
+    let secondaryApp = null;
+    let secondaryAuth = null;
+    let createdAuthUser = null;
+
     try {
-        // Verificar se já existe um usuário com este email
+        const adminUser = auth.currentUser;
+        if (!adminUser) {
+            mostrarNotificacaoAdmin("Faça login como administrador antes de criar usuários.", "error");
+            return;
+        }
+
+        const adminSnapshot = await db.ref(`users/${adminUser.uid}`).once('value');
+        const adminData = adminSnapshot.val() || {};
+        if (normalizeRole(adminData.role) !== 'admin' || adminData.isActive === false || adminData.ativo === false) {
+            mostrarNotificacaoAdmin("Apenas administradores ativos podem criar usuários.", "error");
+            return;
+        }
+
+        // Verificar se já existe um usuário com este email no Database
         const usersSnapshot = await db.ref('users').orderByChild('email').equalTo(email).once('value');
         if (usersSnapshot.exists()) {
             mostrarNotificacaoAdmin("Já existe um usuário com este email", "error");
             return;
         }
-        
-        // Criar usuário no Firebase Auth
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-        const userId = userCredential.user.uid;
-        
-        // Salvar informações adicionais no Database
+
+        // Criar usuário em um app secundário para não trocar a sessão do administrador atual.
+        secondaryApp = firebase.initializeApp(firebaseConfig, `admin-create-user-${Date.now()}`);
+        secondaryAuth = secondaryApp.auth();
+        const userCredential = await secondaryAuth.createUserWithEmailAndPassword(email, password);
+        createdAuthUser = userCredential.user;
+        const userId = createdAuthUser.uid;
+        const now = Date.now();
+
+        // Salvar informações adicionais no Database usando a sessão do administrador do app principal.
         await db.ref(`users/${userId}`).set({
-            email: email,
-            role: role || 'Carregador',
+            email,
+            role,
             name: name || null,
-            createdAt: Date.now(),
-            createdBy: auth.currentUser.email,
+            nome: name || null,
+            createdAt: now,
+            criadoEm: now,
+            updatedAt: now,
+            atualizadoEm: now,
+            createdBy: adminUser.email || adminUser.uid,
+            criadoPor: adminUser.email || adminUser.uid,
             lastLogin: null,
-            isActive: true
+            isActive: true,
+            ativo: true
         });
-        
+
+        await secondaryAuth.signOut();
+        await secondaryApp.delete();
+
         // Log da ação
         await logAction(`criou o usuário ${email} (${role})`);
-        
+
         // Limpar formulário
         const userForm = document.getElementById('userForm');
         if (userForm) userForm.reset();
-        
+
         // Recarregar lista de usuários
         await carregarUsuarios();
-        
+
         mostrarNotificacaoAdmin(`Usuário ${email} criado com sucesso!`, "success");
-        
+
     } catch (error) {
         console.error("❌ Erro ao criar usuário:", error);
-        
+
+        if (createdAuthUser && error && (error.code === 'PERMISSION_DENIED' || error.code === 'permission-denied' || /permission/i.test(error.message || ''))) {
+            try { await createdAuthUser.delete(); } catch (_) {}
+        }
+        if (secondaryAuth) {
+            try { await secondaryAuth.signOut(); } catch (_) {}
+        }
+        if (secondaryApp) {
+            try { await secondaryApp.delete(); } catch (_) {}
+        }
+
         let errorMessage = "Erro ao criar usuário: ";
         switch(error.code) {
             case 'auth/email-already-in-use':
@@ -316,15 +356,19 @@ async function criarUsuario(e) {
                 errorMessage = "Email inválido.";
                 break;
             case 'auth/operation-not-allowed':
-                errorMessage = "Operação não permitida.";
+                errorMessage = "Operação não permitida. Ative Email/Password no Firebase Authentication.";
                 break;
             case 'auth/weak-password':
                 errorMessage = "Senha muito fraca. Use pelo menos 6 caracteres.";
                 break;
+            case 'PERMISSION_DENIED':
+            case 'permission-denied':
+                errorMessage = "Permissão negada no Realtime Database. Confirme se a conta logada é administradora ativa.";
+                break;
             default:
                 errorMessage += error.message;
         }
-        
+
         mostrarNotificacaoAdmin(errorMessage, "error");
     }
 }
