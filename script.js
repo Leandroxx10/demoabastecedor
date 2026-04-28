@@ -4,6 +4,7 @@
 
 // Dados das máquinas
 let dadosMaquinas = {};
+let machineMaintenance = {};
 
 // Prefixos pré-definidos - AGORA CARREGADOS DO FIREBASE
 let prefixos = [];
@@ -317,6 +318,15 @@ function inicializarFirebaseListeners() {
         }
     });
     
+    // Listener para manutenção (compartilhado entre os dois sites)
+    db.ref("manutencao").on("value", snapshot => {
+        machineMaintenance = snapshot.val() || {};
+        window.machineMaintenance = machineMaintenance;
+        if (Object.keys(dadosMaquinas).length > 0) {
+            criarPainel(dadosMaquinas);
+        }
+    });
+
     // Listener para configurações (sincroniza entre todos os usuários)
     db.ref("configuracoes").on("value", snapshot => {
         const configSalva = snapshot.val();
@@ -393,10 +403,13 @@ function criarPainel(maquinas) {
 
         if (itensCriticos.length > 0) totalCriticos++;
 
+        const isInMaintenance = isMachineInMaintenance(id);
+        const maintenanceReason = machineMaintenance[id]?.reason || machineMaintenance[id]?.motivo || '';
+
         const maquinaAmostra = Boolean(m.amostra);
 
         let maquinaHTML = `
-            <div class="maquina ${alerta ? "alerta" : ""} ${maquinaAmostra ? "maquina-amostra" : ""}">
+            <div class="maquina ${alerta ? "alerta" : ""} ${maquinaAmostra ? "maquina-amostra" : ""} ${isInMaintenance ? "maintenance" : ""}">
                 <div class="maquina-header">
                     <button
                         type="button"
@@ -444,12 +457,27 @@ function criarPainel(maquinas) {
                                 ${currentPrefixRecord ? "" : "disabled"}>
                                 <i class="fas fa-eye"></i>
                             </button>
+                            <button
+                                type="button"
+                                class="maintenance-toggle-btn ${isMachineInMaintenance(id) ? 'active' : ''}"
+                                onclick="toggleMachineMaintenance('${id}')"
+                                title="${isMachineInMaintenance(id) ? 'Retirar da manutenção' : 'Colocar em parada para manutenção'}"
+                                aria-pressed="${isMachineInMaintenance(id)}">
+                                <i class="fas fa-tools"></i>
+                            </button>
                         </div>
                     </div>`;
         }
 
         maquinaHTML += `
                 </div>`;
+
+        if (isInMaintenance) {
+            maquinaHTML += `
+                <div class="maintenance-message">
+                    <i class="fas fa-tools"></i> Parada para manutenção${maintenanceReason ? `: ${maintenanceReason}` : ''}
+                </div>`;
+        }
 
         if (config.mostrarMolde) {
             maquinaHTML += renderLinhaControle(id, "molde", "Molde", "fas fa-cube", "molde-bg", m.molde || 0);
@@ -654,6 +682,10 @@ document.addEventListener('click', function(event) {
 // ====================================================
 
 function alterar(maquinaId, tipo, delta) {
+    if (isMachineInMaintenance(maquinaId)) {
+        mostrarNotificacao('Máquina em parada para manutenção.', 'warning');
+        return;
+    }
     // 1. Atualização IMEDIATA na tela (SEM esperar Firebase)
     const element = document.getElementById(`${maquinaId}-${tipo}`);
     if (element) {
@@ -1525,3 +1557,39 @@ window.atualizarPorInput = atualizarPorInput;
 window.mostrarNotificacao = mostrarNotificacao;
 
 console.log("✅ Script principal carregado");
+
+
+// ====================================================
+// MANUTENÇÃO COMPARTILHADA ENTRE PAINEL E ABASTECEDOR
+// ====================================================
+function isMachineInMaintenance(machineId) {
+    const status = machineMaintenance?.[machineId];
+    return !!(status && (status.isInMaintenance === true || status.status === 'maintenance' || status.status === 'manutencao'));
+}
+
+async function toggleMachineMaintenance(machineId) {
+    const current = isMachineInMaintenance(machineId);
+    const action = current ? 'retirar esta máquina da manutenção' : 'colocar esta máquina em parada para manutenção';
+    if (!confirm(`Deseja ${action}?`)) return;
+
+    try {
+        if (current) {
+            await db.ref(`manutencao/${machineId}`).remove();
+            mostrarNotificacao(`Máquina ${machineId} retomada da produção.`, 'success');
+        } else {
+            const reason = prompt('Motivo da manutenção (opcional):') || '';
+            await db.ref(`manutencao/${machineId}`).set({
+                isInMaintenance: true,
+                status: 'maintenance',
+                reason: reason.trim(),
+                startedAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                source: 'controle-por-maquina'
+            });
+            mostrarNotificacao(`Máquina ${machineId} em parada para manutenção.`, 'success');
+        }
+    } catch (error) {
+        console.error('Erro ao atualizar manutenção:', error);
+        mostrarNotificacao('Erro ao atualizar manutenção.', 'error');
+    }
+}
