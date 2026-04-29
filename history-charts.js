@@ -202,11 +202,6 @@
     const horaNum = Number.isFinite(record.horaNum) ? Number(record.horaNum) : date.getHours();
     const minutoNum = Number.isFinite(record.minutoNum) ? Number(record.minutoNum) : date.getMinutes();
     const data = recordDateBR(record);
-    const full = record.valoresCompletos || record.snapshot || {};
-    const n = value => {
-      const num = Number(value);
-      return Number.isFinite(num) ? num : 0;
-    };
 
     return {
       id: key,
@@ -216,19 +211,11 @@
       hora: record.hora || `${pad2(horaNum)}:${pad2(minutoNum)}`,
       horaNum,
       minutoNum,
-      molde: n(record.molde !== undefined ? record.molde : (full.molde !== undefined ? full.molde : record.new_molde)),
-      blank: n(record.blank !== undefined ? record.blank : (full.blank !== undefined ? full.blank : record.new_blank)),
-      neck_ring: n(record.neck_ring !== undefined ? record.neck_ring : (full.neck_ring !== undefined ? full.neck_ring : record.new_neckring)),
-      funil: n(record.funil !== undefined ? record.funil : (full.funil !== undefined ? full.funil : record.new_funil)),
-      valoresCompletos: {
-        molde: n(full.molde !== undefined ? full.molde : record.molde),
-        blank: n(full.blank !== undefined ? full.blank : record.blank),
-        neck_ring: n(full.neck_ring !== undefined ? full.neck_ring : record.neck_ring),
-        funil: n(full.funil !== undefined ? full.funil : record.funil)
-      },
-      campo: record.campo || '',
-      camposAlterados: Array.isArray(record.camposAlterados) ? record.camposAlterados : [],
-      tipo: record.tipo || ''
+      molde: Number(record.molde !== undefined ? record.molde : (record.new_molde || 0)),
+      blank: Number(record.blank !== undefined ? record.blank : (record.new_blank || 0)),
+      neck_ring: Number(record.neck_ring !== undefined ? record.neck_ring : (record.new_neckring || 0)),
+      funil: Number(record.funil !== undefined ? record.funil : (record.new_funil || 0)),
+      tipo: record.tipo || 'hourly'
     };
   }
 
@@ -284,9 +271,11 @@
     const result = [];
 
     Object.keys(rows).forEach(key => {
-      const normalized = normalizeRecord(key, rows[key] || {});
-      const isReal = /^real_time/.test(String(normalized.tipo || ''));
-      if (isReal && (acceptedBR.has(normalized.data) || acceptedISO.has(normalized.dataISO) || timestampMatchesDate(normalized.timestamp, dateBR, selected.iso || getDateISOFromBR(dateBR)))) {
+      const raw = rows[key] || {};
+      const normalized = normalizeRecord(key, raw);
+      // Somente dados reais: ignora snapshots horários, snapshot atual e registros artificiais.
+      if (normalized.tipo !== 'real_time') return;
+      if (acceptedBR.has(normalized.data) || acceptedISO.has(normalized.dataISO) || timestampMatchesDate(normalized.timestamp, dateBR, selected.iso || getDateISOFromBR(dateBR))) {
         result.push(normalized);
       }
     });
@@ -351,38 +340,66 @@
 
     if (!inner) return;
 
-    const width = Math.max(1100, count * (chartType === 'bar' ? 80 : 95));
+    const width = Math.max(1100, count * (chartType === 'bar' ? 80 : 95) + 140);
     inner.style.minWidth = `${width}px`;
     inner.style.width = `${width}px`;
 
     if (scroll) scroll.scrollLeft = 0;
   }
 
-  const endLabelsPlugin = {
-    id: 'wmEndLabels',
-    afterDatasetsDraw(chartInstance) {
-      if (chartType !== 'line') return;
-      const { ctx, chartArea } = chartInstance;
-      const items = [];
-      chartInstance.data.datasets.forEach((ds, dsIndex) => {
-        if (!chartInstance.isDatasetVisible(dsIndex)) return;
-        const meta = chartInstance.getDatasetMeta(dsIndex);
-        let i = ds.data.length - 1;
-        while (i >= 0 && (ds.data[i] === null || ds.data[i] === undefined)) i--;
-        if (i < 0 || !meta.data[i]) return;
-        items.push({ ds, x: meta.data[i].x, y: meta.data[i].y, text: ds.endLabel || ds.label });
-      });
-      ctx.save(); ctx.font = 'bold 12px Arial, sans-serif'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-      const groups = new Map();
-      items.forEach(item => { const key = String(Math.round(item.x)) + '_' + String(Math.round(item.y)); if (!groups.has(key)) groups.set(key, []); groups.get(key).push(item); });
-      groups.forEach(group => group.forEach((item, index) => {
-        let x = item.x + 26 + (group.length > 1 ? index * 30 : 0);
-        let y = Math.max(chartArea.top + 8, Math.min(chartArea.bottom - 8, item.y));
-        if (x > chartArea.right + 70) x = chartArea.right + 8 + (group.length > 1 ? index * 30 : 0);
-        ctx.fillStyle = item.ds.borderColor || '#111827'; ctx.fillText(item.text, x, y);
-      })); ctx.restore();
-    }
-  };
+
+  function makeEndLabelsPlugin() {
+    return {
+      id: 'wmEndLabels',
+      afterDatasetsDraw(chartInstance) {
+        if (chartType !== 'line') return;
+        const ctx = chartInstance.ctx;
+        const datasets = chartInstance.data.datasets || [];
+        if (!datasets.length) return;
+
+        const used = [];
+        ctx.save();
+        ctx.font = 'bold 12px Arial';
+        ctx.textBaseline = 'middle';
+
+        datasets.forEach((dataset, datasetIndex) => {
+          const meta = chartInstance.getDatasetMeta(datasetIndex);
+          if (!meta || meta.hidden || !meta.data || !meta.data.length) return;
+
+          let lastIndex = dataset.data.length - 1;
+          while (lastIndex >= 0 && (dataset.data[lastIndex] === null || dataset.data[lastIndex] === undefined)) lastIndex--;
+          if (lastIndex < 0) return;
+
+          const point = meta.data[lastIndex];
+          if (!point) return;
+
+          const name = String(dataset.label || '').toLowerCase();
+          const label = name.includes('molde') ? 'M' : name.includes('blank') ? 'BL' : name.includes('neck') ? 'NR' : name.includes('fun') ? 'F' : '';
+          if (!label) return;
+
+          let x = point.x + 28;
+          let y = point.y;
+
+          // Se dois labels caírem no mesmo valor/altura, coloca lado a lado.
+          used.forEach(pos => {
+            if (Math.abs(pos.y - y) < 14) {
+              x = Math.max(x, pos.x + 28);
+            }
+          });
+
+          // Mantém dentro do canvas, mas no espaço livre à direita do último ponto.
+          x = Math.min(x, chartInstance.width - 26);
+          y = Math.max(12, Math.min(chartInstance.height - 18, y));
+
+          ctx.fillStyle = dataset.borderColor || '#111827';
+          ctx.fillText(label, x, y);
+          used.push({ x, y });
+        });
+
+        ctx.restore();
+      }
+    };
+  }
 
   function buildChart(rows) {
     const canvas = $('historyChart');
@@ -390,43 +407,44 @@
 
     safeDestroyChart();
 
-    const sortedRows = sortRecords(rows);
-    const carry = { molde: null, blank: null, neckring: null, funil: null };
-    const points = sortedRows.map(item => {
-      const full = item.valoresCompletos || item.snapshot || null;
-      const hasOwn = (obj, key) => Object.prototype.hasOwnProperty.call(obj || {}, key);
-      const next = {
-        molde: hasOwn(item, 'molde') ? Number(item.molde) : (full && hasOwn(full, 'molde') ? Number(full.molde) : carry.molde),
-        blank: hasOwn(item, 'blank') ? Number(item.blank) : (full && hasOwn(full, 'blank') ? Number(full.blank) : carry.blank),
-        neckring: hasOwn(item, 'neck_ring') ? Number(item.neck_ring) : (full && hasOwn(full, 'neck_ring') ? Number(full.neck_ring) : carry.neckring),
-        funil: hasOwn(item, 'funil') ? Number(item.funil) : (full && hasOwn(full, 'funil') ? Number(full.funil) : carry.funil)
-      };
-      Object.keys(carry).forEach(key => { if (Number.isFinite(next[key])) carry[key] = next[key]; else next[key] = carry[key] ?? 0; });
-      return { label: item.data && item.data !== currentDate ? (item.hora + ' (' + item.data.slice(0, 5) + ')') : item.hora, ...next };
-    });
+    const points = sortRecords(rows).map(item => ({
+      label: item.data && item.data !== currentDate ? `${item.hora} (${item.data.slice(0, 5)})` : item.hora,
+      molde: item.molde || 0,
+      blank: item.blank || 0,
+      neckring: item.neck_ring || 0,
+      funil: item.funil || 0,
+      timestamp: item.timestamp || 0
+    }));
 
-    const extraRightSlots = points.length ? 1 : 0;
-    const axisLabels = points.map(p => p.label).concat(Array(extraRightSlots).fill(''));
-    setChartWidth(Math.max(points.length + extraRightSlots, 2));
+    setChartWidth(points.length);
+
     const datasets = [];
 
-    function addDataset(key, label, field, endLabel) {
+    function addDataset(key, label, field) {
       if (!datasetVisibility[key]) return;
-      datasets.push({ label, endLabel, data: points.map(p => p[field]).concat(Array(extraRightSlots).fill(null)), borderColor: CORES[key], backgroundColor: chartType === 'bar' ? (CORES[key] + '80') : 'transparent', borderWidth: 2, pointRadius: chartType === 'line' ? 3 : 0, tension: 0.12, spanGaps: false });
+
+      datasets.push({
+        label,
+        data: points.map(p => p[field]),
+        borderColor: CORES[key],
+        backgroundColor: chartType === 'bar' ? `${CORES[key]}80` : 'transparent',
+        borderWidth: 2,
+        pointRadius: chartType === 'line' ? 3 : 0,
+        tension: 0.12
+      });
     }
 
-    addDataset('molde', 'Moldes', 'molde', 'M');
-    addDataset('blank', 'Blanks', 'blank', 'BL');
-    addDataset('neckring', 'Neck Rings', 'neckring', 'NR');
-    addDataset('funil', 'Funís', 'funil', 'F');
+    addDataset('molde', 'Moldes', 'molde');
+    addDataset('blank', 'Blanks', 'blank');
+    addDataset('neckring', 'Neck Rings', 'neckring');
+    addDataset('funil', 'Funís', 'funil');
 
     chart = new Chart(canvas.getContext('2d'), {
       type: chartType,
       data: {
-        labels: axisLabels,
+        labels: points.map(p => p.label),
         datasets
       },
-      plugins: [endLabelsPlugin],
       options: {
         responsive: true,
         maintainAspectRatio: false,
@@ -457,7 +475,8 @@
           y: { beginAtZero: true, ticks: { stepSize: 1 } },
           x: { ticks: { autoSkip: false, maxRotation: 0 } }
         }
-      }
+      },
+      plugins: [makeEndLabelsPlugin()]
     });
 
     window.historyChart = chart;
@@ -477,7 +496,7 @@
     }
 
     tbody.innerHTML = sortRecords(rows).map(item => {
-      const icon = /^real_time/.test(String(item.tipo || '')) ? '⚡' : ''; 
+      const icon = item.tipo === 'real_time' ? '⚡' : '⏰';
       const hora = item.data && item.data !== currentDate ? `${item.hora} (${item.data.slice(0, 5)})` : item.hora;
 
       return `
@@ -572,7 +591,6 @@
       const data = await getHistoryFromFirebase(machine, date, period);
       currentData = data;
       displayedData = sortRecords(filterByPeriod(data, period), period);
-
 
       if (!displayedData.length) {
         showEmpty(machine, date, period);
@@ -757,30 +775,13 @@
     fillMachines();
     injectShiftButtons();
     bindEvents();
-    const selectedMachine = getSelectedMachineSafe();
-    const selectedDate = $('historyDate')?.value || currentDate;
-    if (selectedMachine && selectedDate) {
-      currentMachine = selectedMachine;
-      currentDate = normalizeSelectedDate(selectedDate).br || selectedDate;
-      setTimeout(() => loadHistoryChart(), 150);
-    } else {
-      buildChart([]);
-    }
-  }
+    buildChart([]);
 
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && getSelectedMachineSafe() && ($('historyDate')?.value || currentDate)) loadHistoryChart();
-  });
-
-
-  if (!window.__wmHistoryAutoReloadBound) {
-    window.__wmHistoryAutoReloadBound = true;
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && getSelectedMachineSafe() && ($('historyDate')?.value || currentDate)) loadHistoryChart();
-    });
-    window.addEventListener('focus', () => {
-      if (getSelectedMachineSafe() && ($('historyDate')?.value || currentDate)) loadHistoryChart();
-    });
+    setTimeout(() => {
+      const machine = getSelectedMachineSafe();
+      const date = $('historyDate')?.value || currentDate;
+      if (machine && date) loadHistoryChart();
+    }, 300);
   }
 
   window.initHistorySection = initHistorySection;
