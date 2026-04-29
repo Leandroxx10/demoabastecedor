@@ -27,6 +27,57 @@
     funil: '#6b7280'
   };
 
+  const END_LABEL_PLUGIN = {
+    id: 'wmEndLineLabels',
+    afterDatasetsDraw(chartInstance) {
+      const ctx = chartInstance.ctx;
+      const area = chartInstance.chartArea;
+      if (!ctx || !area || chartType !== 'line') return;
+      chartInstance.data.datasets.forEach((dataset, datasetIndex) => {
+        const text = dataset.endLabel;
+        if (!text || chartInstance.isDatasetVisible(datasetIndex) === false) return;
+        const meta = chartInstance.getDatasetMeta(datasetIndex);
+        if (!meta || !meta.data || !meta.data.length) return;
+        let lastIndex = -1;
+        for (let i = dataset.data.length - 1; i >= 0; i -= 1) {
+          const value = dataset.data[i];
+          if (value !== null && value !== undefined && Number.isFinite(Number(value))) { lastIndex = i; break; }
+        }
+        if (lastIndex < 0 || !meta.data[lastIndex]) return;
+        const point = meta.data[lastIndex];
+        const pos = point.getProps ? point.getProps(['x', 'y'], true) : { x: point.x, y: point.y };
+        const x = Math.min(pos.x + 32, chartInstance.width - 30);
+        const y = Math.max(area.top + 10, Math.min(pos.y, area.bottom - 10));
+        ctx.save();
+        ctx.font = '700 13px Arial, sans-serif';
+        ctx.fillStyle = dataset.borderColor || '#111827';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, x, y);
+        ctx.restore();
+      });
+    }
+  };
+
+  function addShiftBoundaryPoints(points) {
+    const period = getActivePeriod();
+    const range = getPeriodRange(period);
+    if (!points.length || !range || !range.start || !range.end) return points;
+    const result = points.slice();
+    const startLabel = range.start;
+    const endLabel = range.end;
+    const startValues = result[0];
+    const endValues = result[result.length - 1];
+    if (result[0].label !== startLabel) {
+      result.unshift({ label: startLabel, molde: startValues.molde, blank: startValues.blank, neckring: startValues.neckring, funil: startValues.funil, __boundary: true });
+    }
+    if (result[result.length - 1].label !== endLabel) {
+      result.push({ label: endLabel, molde: endValues.molde, blank: endValues.blank, neckring: endValues.neckring, funil: endValues.funil, __boundary: true });
+    }
+    return result;
+  }
+
+
   function $(id) {
     return document.getElementById(id);
   }
@@ -51,41 +102,8 @@
   }
 
 
-  const SAO_PAULO_TZ = 'America/Sao_Paulo';
-
   function pad2(v) {
     return String(v).padStart(2, '0');
-  }
-
-  function getSaoPauloParts(date = new Date()) {
-    const parts = new Intl.DateTimeFormat('pt-BR', {
-      timeZone: SAO_PAULO_TZ,
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-      hour12: false
-    }).formatToParts(date).reduce((acc, part) => {
-      if (part.type !== 'literal') acc[part.type] = part.value;
-      return acc;
-    }, {});
-
-    if (parts.hour === '24') parts.hour = '00';
-    return parts;
-  }
-
-  function saoPauloDateInfo(timestamp = Date.now()) {
-    const p = getSaoPauloParts(new Date(Number(timestamp) || Date.now()));
-    return {
-      dataBR: `${p.day}/${p.month}/${p.year}`,
-      dataISO: `${p.year}-${p.month}-${p.day}`,
-      hora: `${p.hour}:${p.minute}`,
-      horaNum: parseInt(p.hour, 10) || 0,
-      minutoNum: parseInt(p.minute, 10) || 0
-    };
-  }
-
-  function todayInSaoPauloDate() {
-    const p = getSaoPauloParts(new Date());
-    return new Date(Number(p.year), Number(p.month) - 1, Number(p.day));
   }
 
   function parseBRDate(value) {
@@ -231,16 +249,16 @@
 
   function normalizeRecord(key, record) {
     const ts = Number(record.timestamp || Date.now());
-    const sp = saoPauloDateInfo(ts);
-    const horaNum = Number.isFinite(record.horaNum) ? Number(record.horaNum) : sp.horaNum;
-    const minutoNum = Number.isFinite(record.minutoNum) ? Number(record.minutoNum) : sp.minutoNum;
-    const data = recordDateBR(record) || sp.dataBR;
+    const date = new Date(ts);
+    const horaNum = Number.isFinite(record.horaNum) ? Number(record.horaNum) : date.getHours();
+    const minutoNum = Number.isFinite(record.minutoNum) ? Number(record.minutoNum) : date.getMinutes();
+    const data = recordDateBR(record);
 
     return {
       id: key,
       timestamp: ts,
       data,
-      dataISO: record.dataISO || getDateISOFromBR(data) || sp.dataISO,
+      dataISO: record.dataISO || getDateISOFromBR(data),
       hora: record.hora || `${pad2(horaNum)}:${pad2(minutoNum)}`,
       horaNum,
       minutoNum,
@@ -370,7 +388,7 @@
 
     if (!inner) return;
 
-    const width = Math.max(1100, count * (chartType === 'bar' ? 80 : 95));
+    const width = Math.max(1180, (count * (chartType === 'bar' ? 80 : 95)) + 160);
     inner.style.minWidth = `${width}px`;
     inner.style.width = `${width}px`;
 
@@ -383,13 +401,13 @@
 
     safeDestroyChart();
 
-    const points = sortRecords(rows).map(item => ({
+    const points = addShiftBoundaryPoints(sortRecords(rows).map(item => ({
       label: item.data && item.data !== currentDate ? `${item.hora} (${item.data.slice(0, 5)})` : item.hora,
       molde: item.molde || 0,
       blank: item.blank || 0,
       neckring: item.neck_ring || 0,
       funil: item.funil || 0
-    }));
+    })));
 
     setChartWidth(points.length);
 
@@ -405,7 +423,9 @@
         backgroundColor: chartType === 'bar' ? `${CORES[key]}80` : 'transparent',
         borderWidth: 2,
         pointRadius: chartType === 'line' ? 3 : 0,
-        tension: 0.12
+        tension: 0.12,
+        clip: false,
+        endLabel: key === 'molde' ? 'M' : (key === 'blank' ? 'BL' : '')
       });
     }
 
@@ -425,7 +445,7 @@
         maintainAspectRatio: false,
         animation: false,
         layout: {
-          padding: { top: 78 }
+          padding: { top: 78, right: 82 }
         },
         interaction: {
           mode: 'index',
@@ -444,13 +464,15 @@
           title: {
             display: datasets.length === 0,
             text: 'Selecione Moldes, Blanks, Neck Rings ou Funís para visualizar'
-          }
+          },
+          wmEndLineLabels: {}
         },
         scales: {
           y: { beginAtZero: true, ticks: { stepSize: 1 } },
           x: { ticks: { autoSkip: false, maxRotation: 0 } }
         }
-      }
+      },
+      plugins: [END_LABEL_PLUGIN]
     });
 
     window.historyChart = chart;
@@ -610,7 +632,7 @@
     if (!select) return;
 
     select.innerHTML = '';
-    const today = todayInSaoPauloDate();
+    const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     for (let i = 0; i < 30; i++) {

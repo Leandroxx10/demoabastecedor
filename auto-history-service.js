@@ -63,41 +63,37 @@
     }
     
     // ===== HORÁRIO DE SÃO PAULO =====
-    // Firebase armazena timestamp em UTC (Date.now()). A data/hora usada no histórico
-    // é sempre calculada em America/Sao_Paulo para não virar o dia em UTC.
-    const SAO_PAULO_TZ = 'America/Sao_Paulo';
-
-    function getSaoPauloParts(date = new Date()) {
+    function getSaoPauloTime() {
+        const now = new Date();
         const parts = new Intl.DateTimeFormat('pt-BR', {
-            timeZone: SAO_PAULO_TZ,
+            timeZone: 'America/Sao_Paulo',
             year: 'numeric', month: '2-digit', day: '2-digit',
             hour: '2-digit', minute: '2-digit', second: '2-digit',
             hour12: false
-        }).formatToParts(date).reduce((acc, part) => {
+        }).formatToParts(now).reduce((acc, part) => {
             if (part.type !== 'literal') acc[part.type] = part.value;
             return acc;
         }, {});
 
-        if (parts.hour === '24') parts.hour = '00';
-        return parts;
-    }
-
-    function getSaoPauloTime() {
-        const now = new Date();
-        const p = getSaoPauloParts(now);
+        const dia = parts.day;
+        const mes = parts.month;
+        const ano = Number(parts.year);
+        const hora = parts.hour === '24' ? '00' : parts.hour;
+        const minuto = parts.minute;
+        const segundo = parts.second;
 
         return {
-            data: { dia: p.day, mes: p.month, ano: p.year },
-            hora: { hora: p.hour, minuto: p.minute, segundo: p.second },
+            data: { dia, mes, ano },
+            hora: { hora, minuto, segundo },
             timestamp: now.getTime(),
-            dataBR: `${p.day}/${p.month}/${p.year}`,
-            horaCompleta: `${p.hour}:${p.minute}:${p.second}`,
-            horaMinuto: `${p.hour}:${p.minute}`,
-            horaInt: parseInt(p.hour, 10),
-            minutoInt: parseInt(p.minute, 10)
+            dataBR: `${dia}/${mes}/${ano}`,
+            horaCompleta: `${hora}:${minuto}:${segundo}`,
+            horaMinuto: `${hora}:${minuto}`,
+            horaInt: Number(hora),
+            minutoInt: Number(minuto)
         };
     }
-
+    
     // ===== AUXILIARES =====
     function parseNum(val) {
         const num = parseInt(val, 10);
