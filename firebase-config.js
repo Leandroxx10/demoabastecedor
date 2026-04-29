@@ -317,18 +317,6 @@ function sanitizeForLog(value) {
     }
 }
 
-
-function getSaoPauloISODateForAudit(date = new Date()) {
-    const parts = new Intl.DateTimeFormat('pt-BR', {
-        timeZone: 'America/Sao_Paulo',
-        year: 'numeric', month: '2-digit', day: '2-digit'
-    }).formatToParts(date).reduce((acc, part) => {
-        if (part.type !== 'literal') acc[part.type] = part.value;
-        return acc;
-    }, {});
-    return `${parts.year}-${parts.month}-${parts.day}`;
-}
-
 async function writeAuditLog({ action, details = '', targetPath = '', entityType = '', entityId = '', before = null, after = null, extra = {} }) {
     try {
         const actor = getAuditUser();
@@ -345,7 +333,7 @@ async function writeAuditLog({ action, details = '', targetPath = '', entityType
             after: sanitizeForLog(after),
             extra: sanitizeForLog(extra),
             timestamp,
-            date: getSaoPauloISODateForAudit(new Date(timestamp))
+            date: new Date(timestamp).toISOString().split('T')[0]
         };
         await db.ref('logs').push(payload);
     } catch (error) {
