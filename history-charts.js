@@ -202,6 +202,11 @@
     const horaNum = Number.isFinite(record.horaNum) ? Number(record.horaNum) : date.getHours();
     const minutoNum = Number.isFinite(record.minutoNum) ? Number(record.minutoNum) : date.getMinutes();
     const data = recordDateBR(record);
+    const full = record.valoresCompletos || record.snapshot || {};
+    const n = value => {
+      const num = Number(value);
+      return Number.isFinite(num) ? num : 0;
+    };
 
     return {
       id: key,
@@ -211,11 +216,19 @@
       hora: record.hora || `${pad2(horaNum)}:${pad2(minutoNum)}`,
       horaNum,
       minutoNum,
-      molde: Number(record.molde !== undefined ? record.molde : (record.new_molde || 0)),
-      blank: Number(record.blank !== undefined ? record.blank : (record.new_blank || 0)),
-      neck_ring: Number(record.neck_ring !== undefined ? record.neck_ring : (record.new_neckring || 0)),
-      funil: Number(record.funil !== undefined ? record.funil : (record.new_funil || 0)),
-      tipo: record.tipo || 'hourly'
+      molde: n(record.molde !== undefined ? record.molde : (full.molde !== undefined ? full.molde : record.new_molde)),
+      blank: n(record.blank !== undefined ? record.blank : (full.blank !== undefined ? full.blank : record.new_blank)),
+      neck_ring: n(record.neck_ring !== undefined ? record.neck_ring : (full.neck_ring !== undefined ? full.neck_ring : record.new_neckring)),
+      funil: n(record.funil !== undefined ? record.funil : (full.funil !== undefined ? full.funil : record.new_funil)),
+      valoresCompletos: {
+        molde: n(full.molde !== undefined ? full.molde : record.molde),
+        blank: n(full.blank !== undefined ? full.blank : record.blank),
+        neck_ring: n(full.neck_ring !== undefined ? full.neck_ring : record.neck_ring),
+        funil: n(full.funil !== undefined ? full.funil : record.funil)
+      },
+      campo: record.campo || '',
+      camposAlterados: Array.isArray(record.camposAlterados) ? record.camposAlterados : [],
+      tipo: record.tipo || ''
     };
   }
 
@@ -272,7 +285,8 @@
 
     Object.keys(rows).forEach(key => {
       const normalized = normalizeRecord(key, rows[key] || {});
-      if (acceptedBR.has(normalized.data) || acceptedISO.has(normalized.dataISO) || timestampMatchesDate(normalized.timestamp, dateBR, selected.iso || getDateISOFromBR(dateBR))) {
+      const isReal = /^real_time/.test(String(normalized.tipo || ''));
+      if (isReal && (acceptedBR.has(normalized.data) || acceptedISO.has(normalized.dataISO) || timestampMatchesDate(normalized.timestamp, dateBR, selected.iso || getDateISOFromBR(dateBR)))) {
         result.push(normalized);
       }
     });
@@ -463,7 +477,7 @@
     }
 
     tbody.innerHTML = sortRecords(rows).map(item => {
-      const icon = item.tipo === 'real_time' ? '⚡' : '⏰';
+      const icon = /^real_time/.test(String(item.tipo || '')) ? '⚡' : ''; 
       const hora = item.data && item.data !== currentDate ? `${item.hora} (${item.data.slice(0, 5)})` : item.hora;
 
       return `
@@ -559,13 +573,6 @@
       currentData = data;
       displayedData = sortRecords(filterByPeriod(data, period), period);
 
-      if (!displayedData.length && isSelectedDateToday(currentDate)) {
-        const live = await buildLiveSnapshot(machine, currentDate);
-        if (live) {
-          currentData = [live];
-          displayedData = [live];
-        }
-      }
 
       if (!displayedData.length) {
         showEmpty(machine, date, period);
@@ -764,6 +771,17 @@
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && getSelectedMachineSafe() && ($('historyDate')?.value || currentDate)) loadHistoryChart();
   });
+
+
+  if (!window.__wmHistoryAutoReloadBound) {
+    window.__wmHistoryAutoReloadBound = true;
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && getSelectedMachineSafe() && ($('historyDate')?.value || currentDate)) loadHistoryChart();
+    });
+    window.addEventListener('focus', () => {
+      if (getSelectedMachineSafe() && ($('historyDate')?.value || currentDate)) loadHistoryChart();
+    });
+  }
 
   window.initHistorySection = initHistorySection;
   window.loadHistoryChart = loadHistoryChart;
