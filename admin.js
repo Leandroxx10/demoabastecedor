@@ -89,6 +89,18 @@ function openAdminTab(tabId) {
     }
 }
 
+
+function getSaoPauloISODate(date = new Date()) {
+    const parts = new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(date).reduce((acc, part) => {
+        if (part.type !== 'literal') acc[part.type] = part.value;
+        return acc;
+    }, {});
+    return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
 // ====================================================
 // DASHBOARD
 // ====================================================
@@ -108,7 +120,7 @@ async function carregarDashboard() {
         const prefixesCount = prefixesSnapshot.numChildren();
         
         // Contar mudanças de hoje
-        const hoje = new Date().toISOString().split('T')[0];
+        const hoje = getSaoPauloISODate();
         let changesToday = 0;
         logsSnapshot.forEach(log => {
             if (log.val().date === hoje) {
