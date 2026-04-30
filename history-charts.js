@@ -260,6 +260,23 @@
       }
     });
 
+    // V3: adiciona o estado atual REAL da máquina como último ponto do gráfico.
+    // O histórico (/historico) registra somente mudanças confirmadas; por isso o
+    // último registro pode ficar diferente do card atual (/maquinas). Este ponto
+    // não é salvo no Firebase, apenas sincroniza a visualização.
+    const live = await buildLiveSnapshot(machine, dateBR);
+    if (live) {
+      const ordered = sortRecords(result, period);
+      const last = ordered.slice(-1)[0];
+      const sameValuesAsLast = last &&
+        Number(last.molde || 0) === Number(live.molde || 0) &&
+        Number(last.blank || 0) === Number(live.blank || 0) &&
+        Number(last.neck_ring || 0) === Number(live.neck_ring || 0) &&
+        Number(last.funil || 0) === Number(live.funil || 0);
+      const lastIsFresh = last && (Number(live.timestamp || 0) - Number(last.timestamp || 0)) < 2 * 60 * 1000;
+      if (!(sameValuesAsLast && lastIsFresh)) result.push(live);
+    }
+
     return sortRecords(result, period);
   }
 
@@ -477,7 +494,7 @@
     }
 
     tbody.innerHTML = sortRecords(rows).map(item => {
-      const icon = item.tipo === 'real_time' ? '⚡' : '⏰';
+      const icon = item.tipo === 'real_time' ? '⚡' : (item.tipo === 'snapshot_atual' ? '📍' : '⏰');
       const hora = item.data && item.data !== currentDate ? `${item.hora} (${item.data.slice(0, 5)})` : item.hora;
 
       return `
