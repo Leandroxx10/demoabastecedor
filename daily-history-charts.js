@@ -58,18 +58,33 @@ if (typeof window.DAILY_HISTORY_CHARTS_LOADED === 'undefined') {
         console.log("✅ Seção de histórico diário inicializada");
     }
 
-    // ================= OBTER DATA DE SÃO PAULO =================
-    function getSaoPauloDate() {
-        const now = new Date();
-        // São Paulo é UTC-3 (menos 3 horas do UTC)
-        const saoPauloTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
-        return saoPauloTime;
+    // ================= HORÁRIO DE SÃO PAULO =================
+    function getSaoPauloParts(date = new Date()) {
+        return new Intl.DateTimeFormat('pt-BR', {
+            timeZone: 'America/Sao_Paulo',
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            hour12: false
+        }).formatToParts(date).reduce((acc, part) => {
+            if (part.type !== 'literal') acc[part.type] = part.value;
+            return acc;
+        }, {});
+    }
+
+    function getSaoPauloISODate(date = new Date()) {
+        const p = getSaoPauloParts(date);
+        return `${p.year}-${p.month}-${p.day}`;
+    }
+
+    function getSaoPauloDisplay(date = new Date()) {
+        const p = getSaoPauloParts(date);
+        const hour = p.hour === '24' ? '00' : p.hour;
+        return { dateBR: `${p.day}/${p.month}/${p.year}`, timeBR: `${hour}:${p.minute}:${p.second}`, hour: parseInt(hour, 10) || 0 };
     }
 
     // ================= DEFINIR DATA PADRÃO =================
     function setDefaultDailyDate() {
-        const saoPauloDate = getSaoPauloDate();
-        const dateStr = saoPauloDate.toISOString().split('T')[0];
+        const dateStr = getSaoPauloISODate();
         
         const dateInput = document.getElementById('historyDate');
         if (dateInput) {
@@ -123,10 +138,8 @@ if (typeof window.DAILY_HISTORY_CHARTS_LOADED === 'undefined') {
             const lastRecordEl = document.getElementById('lastHistoryRecord');
             
             if (lastRecordEl && data) {
-                const date = new Date(data.timestamp);
-                const saoPauloTime = new Date(date.getTime() - (3 * 60 * 60 * 1000));
-                
-                lastRecordEl.textContent = `${saoPauloTime.toLocaleDateString('pt-BR')} ${saoPauloTime.toLocaleTimeString('pt-BR')}`;
+                const sp = getSaoPauloDisplay(new Date(data.timestamp));
+                lastRecordEl.textContent = `${sp.dateBR} ${sp.timeBR}`;
             } else if (lastRecordEl) {
                 lastRecordEl.textContent = 'Sem registros';
             }
@@ -411,9 +424,7 @@ function filterDataByTimeRange(data, startTime, endTime) {
         // Criar mapa de dados por hora
         const dataByHour = {};
         data.forEach(item => {
-            const date = new Date(item.timestamp);
-            const saoPauloTime = new Date(date.getTime() - (3 * 60 * 60 * 1000));
-            const hour = saoPauloTime.getHours();
+            const hour = getSaoPauloDisplay(new Date(item.timestamp)).hour;
             
             if (!dataByHour[hour]) {
                 dataByHour[hour] = {
@@ -821,9 +832,7 @@ function updateDailyTable(data) {
         // Agrupar por hora
         const dataByHour = {};
         currentDailyData.forEach(item => {
-            const date = new Date(item.timestamp);
-            const saoPauloTime = new Date(date.getTime() - (3 * 60 * 60 * 1000));
-            const hour = saoPauloTime.getHours();
+            const hour = getSaoPauloDisplay(new Date(item.timestamp)).hour;
             
             if (!dataByHour[hour]) {
                 dataByHour[hour] = {
@@ -879,9 +888,7 @@ function updateDailyTable(data) {
         
         const dataByHour = {};
         currentDailyData.forEach(item => {
-            const date = new Date(item.timestamp);
-            const saoPauloTime = new Date(date.getTime() - (3 * 60 * 60 * 1000));
-            const hour = saoPauloTime.getHours();
+            const hour = getSaoPauloDisplay(new Date(item.timestamp)).hour;
             
             if (!dataByHour[hour]) {
                 dataByHour[hour] = {

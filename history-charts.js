@@ -55,6 +55,36 @@
     return String(v).padStart(2, '0');
   }
 
+  function getSaoPauloParts(date = new Date()) {
+    return new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false
+    }).formatToParts(date).reduce((acc, part) => {
+      if (part.type !== 'literal') acc[part.type] = part.value;
+      return acc;
+    }, {});
+  }
+
+  function normalizeSPHour(hour) { return hour === '24' ? '00' : hour; }
+
+  function formatBRDateSP(date = new Date()) {
+    const p = getSaoPauloParts(date);
+    return `${p.day}/${p.month}/${p.year}`;
+  }
+
+  function formatISODateSP(date = new Date()) {
+    const p = getSaoPauloParts(date);
+    return `${p.year}-${p.month}-${p.day}`;
+  }
+
+  function getSPHourMinute(date = new Date()) {
+    const p = getSaoPauloParts(date);
+    const h = normalizeSPHour(p.hour);
+    return { hora: `${h}:${p.minute}`, horaCompleta: `${h}:${p.minute}:${p.second}`, horaNum: parseInt(h, 10) || 0, minutoNum: parseInt(p.minute, 10) || 0 };
+  }
+
   function parseBRDate(value) {
     const [d, m, y] = String(value || '').split('/').map(Number);
     if (!d || !m || !y) return null;
@@ -133,14 +163,14 @@
     return { br: raw, iso: getDateISOFromBR(raw) };
   }
 
-  function getTodayBR() { return formatBRDate(new Date()); }
-  function getTodayISO() { return formatISODate(new Date()); }
+  function getTodayBR() { return formatBRDateSP(new Date()); }
+  function getTodayISO() { return formatISODateSP(new Date()); }
 
   function timestampMatchesDate(timestamp, targetBR, targetISO) {
     const ts = Number(timestamp || 0);
     if (!ts) return false;
-    const candidates = [new Date(ts), new Date(ts + (3 * 60 * 60 * 1000)), new Date(ts - (3 * 60 * 60 * 1000))];
-    return candidates.some(d => !Number.isNaN(d.getTime()) && (formatBRDate(d) === targetBR || formatISODate(d) === targetISO));
+    const d = new Date(ts);
+    return !Number.isNaN(d.getTime()) && (formatBRDateSP(d) === targetBR || formatISODateSP(d) === targetISO);
   }
 
   function isSelectedDateToday(dateValue) {
@@ -174,14 +204,15 @@
     } catch (err) { console.warn('Não foi possível criar snapshot atual do histórico', err); }
     if (!machineData) return null;
     const now = new Date();
+    const spNow = getSPHourMinute(now);
     return normalizeRecord('snapshot_atual', {
       machineId: machine,
       data: getTodayBR(),
       dataISO: getTodayISO(),
-      hora: `${pad2(now.getHours())}:${pad2(now.getMinutes())}`,
-      horaCompleta: `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`,
-      horaNum: now.getHours(),
-      minutoNum: now.getMinutes(),
+      hora: spNow.hora,
+      horaCompleta: spNow.horaCompleta,
+      horaNum: spNow.horaNum,
+      minutoNum: spNow.minutoNum,
       timestamp: now.getTime(),
       ...extractLiveValues(machineData),
       tipo: 'snapshot_atual',
@@ -218,9 +249,8 @@
 
     if (record.timestamp) {
       const ts = Number(record.timestamp);
-      const candidates = [new Date(ts), new Date(ts + (3 * 60 * 60 * 1000)), new Date(ts - (3 * 60 * 60 * 1000))];
-      const valid = candidates.find(d => !Number.isNaN(d.getTime()));
-      return valid ? formatBRDate(valid) : '';
+      const d = new Date(ts);
+      return Number.isNaN(d.getTime()) ? '' : formatBRDateSP(d);
     }
 
     return '';
@@ -228,9 +258,9 @@
 
   function normalizeRecord(key, record) {
     const ts = Number(record.timestamp || Date.now());
-    const date = new Date(ts);
-    const horaNum = Number.isFinite(record.horaNum) ? Number(record.horaNum) : date.getHours();
-    const minutoNum = Number.isFinite(record.minutoNum) ? Number(record.minutoNum) : date.getMinutes();
+    const spTime = getSPHourMinute(new Date(ts));
+    const horaNum = Number.isFinite(record.horaNum) ? Number(record.horaNum) : spTime.horaNum;
+    const minutoNum = Number.isFinite(record.minutoNum) ? Number(record.minutoNum) : spTime.minutoNum;
     const data = recordDateBR(record);
 
     return {
@@ -238,7 +268,7 @@
       timestamp: ts,
       data,
       dataISO: record.dataISO || getDateISOFromBR(data),
-      hora: record.hora || `${pad2(horaNum)}:${pad2(minutoNum)}`,
+      hora: record.hora || spTime.hora,
       horaNum,
       minutoNum,
       molde: Number(record.molde !== undefined ? record.molde : (record.new_molde || 0)),
@@ -669,8 +699,7 @@
     if (!select) return;
 
     select.innerHTML = '';
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = parseBRDate(getTodayBR());
 
     for (let i = 0; i < 30; i++) {
       const d = new Date(today);
