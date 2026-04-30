@@ -51,132 +51,53 @@
   }
 
 
-  function pad2(v) {
-    return String(v).padStart(2, '0');
+  const TZ = 'America/Sao_Paulo';
+
+  function pad2(v) { return String(v).padStart(2, '0'); }
+
+  function getSPParts(dateOrMs = Date.now()) {
+    const date = dateOrMs instanceof Date ? dateOrMs : new Date(Number(dateOrMs));
+    const parts = new Intl.DateTimeFormat('pt-BR', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).formatToParts(date).reduce((acc, part) => { if (part.type !== 'literal') acc[part.type] = part.value; return acc; }, {});
+    const hour = parts.hour === '24' ? '00' : parts.hour;
+    return { day: parts.day, month: parts.month, year: parts.year, hour, minute: parts.minute, second: parts.second, br: `${parts.day}/${parts.month}/${parts.year}`, iso: `${parts.year}-${parts.month}-${parts.day}`, time: `${hour}:${parts.minute}`, fullTime: `${hour}:${parts.minute}:${parts.second}`, hourNum: parseInt(hour, 10) || 0, minuteNum: parseInt(parts.minute, 10) || 0 };
   }
 
-  function getSaoPauloParts(date = new Date()) {
-    return new Intl.DateTimeFormat('pt-BR', {
-      timeZone: 'America/Sao_Paulo',
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-      hour12: false
-    }).formatToParts(date).reduce((acc, part) => {
-      if (part.type !== 'literal') acc[part.type] = part.value;
-      return acc;
-    }, {});
-  }
-
-  function normalizeSPHour(hour) { return hour === '24' ? '00' : hour; }
-
-  function formatBRDateSP(date = new Date()) {
-    const p = getSaoPauloParts(date);
-    return `${p.day}/${p.month}/${p.year}`;
-  }
-
-  function formatISODateSP(date = new Date()) {
-    const p = getSaoPauloParts(date);
-    return `${p.year}-${p.month}-${p.day}`;
-  }
-
-  function getSPHourMinute(date = new Date()) {
-    const p = getSaoPauloParts(date);
-    const h = normalizeSPHour(p.hour);
-    return { hora: `${h}:${p.minute}`, horaCompleta: `${h}:${p.minute}:${p.second}`, horaNum: parseInt(h, 10) || 0, minutoNum: parseInt(p.minute, 10) || 0 };
-  }
-
-  function parseBRDate(value) {
-    const [d, m, y] = String(value || '').split('/').map(Number);
-    if (!d || !m || !y) return null;
-    return new Date(y, m - 1, d);
-  }
-
-  function formatBRDate(date) {
-    return `${pad2(date.getDate())}/${pad2(date.getMonth() + 1)}/${date.getFullYear()}`;
-  }
-
-  function formatISODate(date) {
-    return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
-  }
-
-  function getDateISOFromBR(value) {
-    const d = parseBRDate(value);
-    return d ? formatISODate(d) : '';
-  }
-
-  function addDays(value, days) {
-    const d = parseBRDate(value);
-    if (!d) return value;
-    d.setDate(d.getDate() + days);
-    return formatBRDate(d);
-  }
-
-  function toMinutes(time) {
-    const [h, m] = String(time || '00:00').split(':').map(Number);
-    return (Number.isFinite(h) ? h : 0) * 60 + (Number.isFinite(m) ? m : 0);
-  }
-
-  // Botão 24h = janela móvel: horário atual do sistema até 24 horas atrás.
-  function getRolling24hWindow() {
-    const end = new Date();
-    const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
-    return { startMs: start.getTime(), endMs: end.getTime() };
-  }
+  function parseBRDate(value) { const [d, m, y] = String(value || '').split('/').map(Number); if (!d || !m || !y) return null; return { d, m, y }; }
+  function makeSPTimestampFromParts(y, m, d, hh = 0, mm = 0, ss = 0) { return Date.UTC(Number(y), Number(m) - 1, Number(d), Number(hh) + 3, Number(mm), Number(ss), 0); }
+  function formatBRDate(dateOrMs) { return getSPParts(dateOrMs).br; }
+  function formatISODate(dateOrMs) { return getSPParts(dateOrMs).iso; }
+  function getDateISOFromBR(value) { const d = parseBRDate(value); return d ? `${d.y}-${pad2(d.m)}-${pad2(d.d)}` : ''; }
+  function addDays(value, days) { const d = parseBRDate(value); if (!d) return value; return formatBRDate(makeSPTimestampFromParts(d.y, d.m, d.d + Number(days || 0), 12, 0, 0)); }
+  function toMinutes(time) { const [h, m] = String(time || '00:00').split(':').map(Number); return (Number.isFinite(h) ? h : 0) * 60 + (Number.isFinite(m) ? m : 0); }
+  function getRolling24hWindow() { const endMs = Date.now(); return { startMs: endMs - 24 * 60 * 60 * 1000, endMs }; }
 
   function timestampFromRecordDateTime(record) {
     if (!record) return 0;
     const timestamp = Number(record.timestamp || 0);
     if (timestamp > 0) return timestamp;
-
     let y, m, d;
-    if (record.dataISO && /^\d{4}-\d{2}-\d{2}$/.test(String(record.dataISO))) {
-      [y, m, d] = String(record.dataISO).split('-').map(Number);
-    } else if (record.data && /^\d{2}\/\d{2}\/\d{4}$/.test(String(record.data))) {
-      const parts = String(record.data).split('/').map(Number);
-      d = parts[0];
-      m = parts[1];
-      y = parts[2];
-    }
-
+    if (record.dataISO && /^\d{4}-\d{2}-\d{2}$/.test(String(record.dataISO))) [y, m, d] = String(record.dataISO).split('-').map(Number);
+    else if (record.data && /^\d{2}\/\d{2}\/\d{4}$/.test(String(record.data))) { const parts = String(record.data).split('/').map(Number); d = parts[0]; m = parts[1]; y = parts[2]; }
     if (!y || !m || !d) return 0;
     const parsedMinutes = toMinutes(record.hora || '00:00');
     const hh = Number.isFinite(Number(record.horaNum)) ? Number(record.horaNum) : Math.floor(parsedMinutes / 60);
     const mm = Number.isFinite(Number(record.minutoNum)) ? Number(record.minutoNum) : parsedMinutes % 60;
-    const built = new Date(y, m - 1, d, hh || 0, mm || 0, 0, 0);
-    return Number.isNaN(built.getTime()) ? 0 : built.getTime();
+    return makeSPTimestampFromParts(y, m, d, hh || 0, mm || 0, 0);
   }
-
 
   function normalizeSelectedDate(value) {
     const raw = String(value || '').trim();
     if (!raw) return { br: '', iso: '' };
-    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-      const [y, m, d] = raw.split('-');
-      return { br: `${d}/${m}/${y}`, iso: raw };
-    }
-    if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
-      const [d, m, y] = raw.split('/');
-      return { br: raw, iso: `${y}-${m}-${d}` };
-    }
-    const parsed = new Date(raw);
-    if (!Number.isNaN(parsed.getTime())) return { br: formatBRDate(parsed), iso: formatISODate(parsed) };
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) { const [y, m, d] = raw.split('-'); return { br: `${d}/${m}/${y}`, iso: raw }; }
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) { const [d, m, y] = raw.split('/'); return { br: raw, iso: `${y}-${m}-${d}` }; }
+    const parsed = new Date(raw); if (!Number.isNaN(parsed.getTime())) return { br: formatBRDate(parsed), iso: formatISODate(parsed) };
     return { br: raw, iso: getDateISOFromBR(raw) };
   }
 
-  function getTodayBR() { return formatBRDateSP(new Date()); }
-  function getTodayISO() { return formatISODateSP(new Date()); }
-
-  function timestampMatchesDate(timestamp, targetBR, targetISO) {
-    const ts = Number(timestamp || 0);
-    if (!ts) return false;
-    const d = new Date(ts);
-    return !Number.isNaN(d.getTime()) && (formatBRDateSP(d) === targetBR || formatISODateSP(d) === targetISO);
-  }
-
-  function isSelectedDateToday(dateValue) {
-    const normalized = normalizeSelectedDate(dateValue);
-    return normalized.br === getTodayBR() || normalized.iso === getTodayISO();
-  }
+  function getTodayBR() { return getSPParts(Date.now()).br; }
+  function getTodayISO() { return getSPParts(Date.now()).iso; }
+  function timestampMatchesDate(timestamp, targetBR, targetISO) { const ts = Number(timestamp || 0); if (!ts) return false; const sp = getSPParts(ts); return sp.br === targetBR || sp.iso === targetISO; }
+  function isSelectedDateToday(dateValue) { const normalized = normalizeSelectedDate(dateValue); return normalized.br === getTodayBR() || normalized.iso === getTodayISO(); }
 
   function extractLiveValues(machineData) {
     const n = value => {
@@ -203,17 +124,17 @@
       }
     } catch (err) { console.warn('Não foi possível criar snapshot atual do histórico', err); }
     if (!machineData) return null;
-    const now = new Date();
-    const spNow = getSPHourMinute(now);
+    const nowMs = Date.now();
+    const sp = getSPParts(nowMs);
     return normalizeRecord('snapshot_atual', {
       machineId: machine,
-      data: getTodayBR(),
-      dataISO: getTodayISO(),
-      hora: spNow.hora,
-      horaCompleta: spNow.horaCompleta,
-      horaNum: spNow.horaNum,
-      minutoNum: spNow.minutoNum,
-      timestamp: now.getTime(),
+      data: sp.br,
+      dataISO: sp.iso,
+      hora: sp.time,
+      horaCompleta: sp.fullTime,
+      horaNum: sp.hourNum,
+      minutoNum: sp.minuteNum,
+      timestamp: nowMs,
       ...extractLiveValues(machineData),
       tipo: 'snapshot_atual',
       source: 'current_machine_state'
@@ -240,37 +161,26 @@
   }
 
   function recordDateBR(record) {
+    const ts = timestampFromRecordDateTime(record);
+    if (ts) return getSPParts(ts).br;
     if (record.data) return record.data;
-
-    if (record.dataISO) {
-      const [y, m, d] = String(record.dataISO).split('-');
-      if (y && m && d) return `${d}/${m}/${y}`;
-    }
-
-    if (record.timestamp) {
-      const ts = Number(record.timestamp);
-      const d = new Date(ts);
-      return Number.isNaN(d.getTime()) ? '' : formatBRDateSP(d);
-    }
-
+    if (record.dataISO) { const [y, m, d] = String(record.dataISO).split('-'); if (y && m && d) return `${d}/${m}/${y}`; }
     return '';
   }
 
   function normalizeRecord(key, record) {
-    const ts = Number(record.timestamp || Date.now());
-    const spTime = getSPHourMinute(new Date(ts));
-    const horaNum = Number.isFinite(record.horaNum) ? Number(record.horaNum) : spTime.horaNum;
-    const minutoNum = Number.isFinite(record.minutoNum) ? Number(record.minutoNum) : spTime.minutoNum;
-    const data = recordDateBR(record);
-
+    record = record || {};
+    const ts = timestampFromRecordDateTime(record) || Date.now();
+    const sp = getSPParts(ts);
     return {
       id: key,
       timestamp: ts,
-      data,
-      dataISO: record.dataISO || getDateISOFromBR(data),
-      hora: record.hora || spTime.hora,
-      horaNum,
-      minutoNum,
+      data: sp.br,
+      dataISO: sp.iso,
+      hora: sp.time,
+      horaCompleta: sp.fullTime,
+      horaNum: sp.hourNum,
+      minutoNum: sp.minuteNum,
       molde: Number(record.molde !== undefined ? record.molde : (record.new_molde || 0)),
       blank: Number(record.blank !== undefined ? record.blank : (record.new_blank || 0)),
       neck_ring: Number(record.neck_ring !== undefined ? record.neck_ring : (record.new_neckring || 0)),
@@ -699,13 +609,10 @@
     if (!select) return;
 
     select.innerHTML = '';
-    const today = parseBRDate(getTodayBR());
+    const base = parseBRDate(getTodayBR());
 
     for (let i = 0; i < 30; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-
-      const value = formatBRDate(d);
+      const value = addDays(`${pad2(base.d)}/${pad2(base.m)}/${base.y}`, -i);
       const option = document.createElement('option');
       option.value = value;
       option.textContent = value + (i === 0 ? ' (Hoje)' : '');

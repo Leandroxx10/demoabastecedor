@@ -58,10 +58,13 @@ if (typeof window.DAILY_HISTORY_CHARTS_LOADED === 'undefined') {
         console.log("✅ Seção de histórico diário inicializada");
     }
 
-    // ================= HORÁRIO DE SÃO PAULO =================
-    function getSaoPauloParts(date = new Date()) {
-        return new Intl.DateTimeFormat('pt-BR', {
-            timeZone: 'America/Sao_Paulo',
+    // ================= HORÁRIO OFICIAL DE SÃO PAULO =================
+    const DAILY_TZ = 'America/Sao_Paulo';
+
+    function getSaoPauloParts(dateOrMs = Date.now()) {
+        const date = dateOrMs instanceof Date ? dateOrMs : new Date(Number(dateOrMs));
+        const parts = new Intl.DateTimeFormat('pt-BR', {
+            timeZone: DAILY_TZ,
             year: 'numeric', month: '2-digit', day: '2-digit',
             hour: '2-digit', minute: '2-digit', second: '2-digit',
             hour12: false
@@ -69,22 +72,28 @@ if (typeof window.DAILY_HISTORY_CHARTS_LOADED === 'undefined') {
             if (part.type !== 'literal') acc[part.type] = part.value;
             return acc;
         }, {});
+        const hour = parts.hour === '24' ? '00' : parts.hour;
+        return {
+            day: parts.day,
+            month: parts.month,
+            year: parts.year,
+            hour,
+            minute: parts.minute,
+            second: parts.second,
+            iso: `${parts.year}-${parts.month}-${parts.day}`,
+            br: `${parts.day}/${parts.month}/${parts.year}`,
+            time: `${hour}:${parts.minute}:${parts.second}`,
+            hourNum: parseInt(hour, 10) || 0
+        };
     }
 
-    function getSaoPauloISODate(date = new Date()) {
-        const p = getSaoPauloParts(date);
-        return `${p.year}-${p.month}-${p.day}`;
-    }
-
-    function getSaoPauloDisplay(date = new Date()) {
-        const p = getSaoPauloParts(date);
-        const hour = p.hour === '24' ? '00' : p.hour;
-        return { dateBR: `${p.day}/${p.month}/${p.year}`, timeBR: `${hour}:${p.minute}:${p.second}`, hour: parseInt(hour, 10) || 0 };
+    function getSaoPauloDate() {
+        return getSaoPauloParts(Date.now()).iso;
     }
 
     // ================= DEFINIR DATA PADRÃO =================
     function setDefaultDailyDate() {
-        const dateStr = getSaoPauloISODate();
+        const dateStr = getSaoPauloDate();
         
         const dateInput = document.getElementById('historyDate');
         if (dateInput) {
@@ -138,8 +147,8 @@ if (typeof window.DAILY_HISTORY_CHARTS_LOADED === 'undefined') {
             const lastRecordEl = document.getElementById('lastHistoryRecord');
             
             if (lastRecordEl && data) {
-                const sp = getSaoPauloDisplay(new Date(data.timestamp));
-                lastRecordEl.textContent = `${sp.dateBR} ${sp.timeBR}`;
+                const sp = getSaoPauloParts(data.timestamp);
+                lastRecordEl.textContent = `${sp.br} ${sp.time}`;
             } else if (lastRecordEl) {
                 lastRecordEl.textContent = 'Sem registros';
             }
@@ -424,7 +433,7 @@ function filterDataByTimeRange(data, startTime, endTime) {
         // Criar mapa de dados por hora
         const dataByHour = {};
         data.forEach(item => {
-            const hour = getSaoPauloDisplay(new Date(item.timestamp)).hour;
+            const hour = getSaoPauloParts(item.timestamp).hourNum;
             
             if (!dataByHour[hour]) {
                 dataByHour[hour] = {
@@ -832,7 +841,7 @@ function updateDailyTable(data) {
         // Agrupar por hora
         const dataByHour = {};
         currentDailyData.forEach(item => {
-            const hour = getSaoPauloDisplay(new Date(item.timestamp)).hour;
+            const hour = getSaoPauloParts(item.timestamp).hourNum;
             
             if (!dataByHour[hour]) {
                 dataByHour[hour] = {
@@ -888,7 +897,7 @@ function updateDailyTable(data) {
         
         const dataByHour = {};
         currentDailyData.forEach(item => {
-            const hour = getSaoPauloDisplay(new Date(item.timestamp)).hour;
+            const hour = getSaoPauloParts(item.timestamp).hourNum;
             
             if (!dataByHour[hour]) {
                 dataByHour[hour] = {
