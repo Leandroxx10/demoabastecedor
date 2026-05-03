@@ -1,0 +1,20 @@
+Correção V3 - Histórico com debounce único por máquina
+
+Problema corrigido:
+- Ao alterar Molde e Blank em sequência, o sistema podia gravar dois pontos no histórico: um após a alteração do Molde e outro após a alteração do Blank.
+
+Solução aplicada:
+- O histórico voltou a ter atraso de confirmação de 10 segundos.
+- O atraso agora é por máquina, não por campo isolado.
+- Qualquer nova alteração em Molde, Blank, Neck Ring ou Funil reinicia o timer da mesma máquina.
+- Após 10 segundos sem nova alteração, é salvo um único snapshot com todos os valores finais.
+- O registro mantém os valores completos para o gráfico, mas `mudancas` e `camposAlterados` indicam apenas o que mudou.
+- As alterações por botão continuam usando transaction() para evitar conflito entre abas.
+
+Arquivos alterados:
+- auto-history-service.js
+- wm-history-core.js
+- admin.js (quando presente)
+
+Validação:
+- Sintaxe JavaScript verificada com node --check nos arquivos alterados.

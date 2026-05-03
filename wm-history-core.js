@@ -9,6 +9,8 @@
   const TZ = 'America/Sao_Paulo';
   const FIELDS = ['molde', 'blank', 'neck_ring', 'funil'];
   let serverOffsetMs = 0;
+  const HISTORY_DEBOUNCE_MS = 10 * 1000;
+  const scheduledSnapshots = {};
 
   function n(value) {
     const num = parseInt(value, 10);
@@ -146,6 +148,34 @@
     return saveMachineSnapshot(machineId, data, meta || {});
   }
 
+  function scheduleMachineSnapshot(machineId, machineData, meta) {
+    machineId = String(machineId || '').trim();
+    if (!machineId) return false;
+    if (scheduledSnapshots[machineId]) clearTimeout(scheduledSnapshots[machineId].timer);
+    scheduledSnapshots[machineId] = {
+      machineData: normalizeMachineValues(machineData || {}),
+      meta: { ...(meta || {}), source: (meta && meta.source) || 'wmhistory_debounce' },
+      startedAt: Date.now(),
+      timer: setTimeout(async () => {
+        const payload = scheduledSnapshots[machineId];
+        delete scheduledSnapshots[machineId];
+        try {
+          const freshData = await readMachine(machineId);
+          await saveMachineSnapshot(machineId, freshData, {
+            ...(payload && payload.meta ? payload.meta : {}),
+            origem: (payload && payload.meta && payload.meta.origem) || 'alteracao_agrupada',
+            source: 'wmhistory_machine_debounce',
+            debounceDelayMs: HISTORY_DEBOUNCE_MS,
+            debounceStartedAt: payload ? payload.startedAt : null
+          });
+        } catch (err) {
+          console.error('[WMHistory] Erro ao salvar snapshot agrupado:', err);
+        }
+      }, HISTORY_DEBOUNCE_MS)
+    };
+    return true;
+  }
+
   async function atomicDelta(machineId, field, delta, meta) {
     await ensureRefs();
     const normalizedField = normalizeField(field);
@@ -160,12 +190,12 @@
     if (!result.committed) throw new Error('Transação cancelada pelo Firebase.');
     committedValue = n(result.snapshot && result.snapshot.val());
     const machineData = await readMachine(machineId);
-    await saveMachineSnapshot(machineId, machineData, {
+    scheduleMachineSnapshot(machineId, machineData, {
       ...(meta || {}),
       eventTimeMs,
       field: normalizedField,
       origem: (meta && meta.origem) || 'botao_rapido',
-      source: 'atomic_transaction'
+      source: 'atomic_transaction_debounced'
     });
     return committedValue;
   }
@@ -176,12 +206,12 @@
     const eventTimeMs = getServerNowMs();
     await window.maquinasRef.child(machineId).child(normalizedField).set(n(value));
     const machineData = await readMachine(machineId);
-    await saveMachineSnapshot(machineId, machineData, {
+    scheduleMachineSnapshot(machineId, machineData, {
       ...(meta || {}),
       eventTimeMs,
       field: normalizedField,
       origem: (meta && meta.origem) || 'digitacao_manual',
-      source: 'set_field_snapshot'
+      source: 'set_field_debounced'
     });
     return n(value);
   }
@@ -208,6 +238,8 @@
     saveSnapshotFromFirebase,
     atomicDelta,
     setFieldAndSnapshot,
+    scheduleMachineSnapshot,
+    HISTORY_DEBOUNCE_MS,
     readMachine
   };
 
