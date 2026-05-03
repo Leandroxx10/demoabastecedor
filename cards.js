@@ -116,6 +116,62 @@ function wmAbrirModalMaquinaPorCard(machineId) {
     }
 }
 
+// V12: 1 clique no código/nome alterna amostra; 2 cliques rápidos abrem o gráfico.
+const wmMachineClickTimers = {};
+function wmCliqueMaquinaAmostraOuModal(event, machineId) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    const id = String(machineId);
+    if (wmMachineClickTimers[id]) {
+        clearTimeout(wmMachineClickTimers[id]);
+        delete wmMachineClickTimers[id];
+        wmAbrirModalMaquinaPorCard(id);
+        return false;
+    }
+    wmMachineClickTimers[id] = setTimeout(() => {
+        delete wmMachineClickTimers[id];
+        if (typeof window.alternarMaquinaAmostra === 'function') {
+            window.alternarMaquinaAmostra(id);
+        } else {
+            wmAlternarMaquinaAmostraDashboard(id);
+        }
+    }, 260);
+    return false;
+}
+
+function wmAlternarMaquinaAmostraDashboard(machineId) {
+    const id = String(machineId);
+    const dados = (window.allMachinesData && window.allMachinesData[id]) || (typeof allMachinesData !== 'undefined' && allMachinesData[id]) || {};
+    const atual = Boolean(dados.amostra);
+    const novoEstado = !atual;
+    if (typeof allMachinesData !== 'undefined') {
+        if (!allMachinesData[id]) allMachinesData[id] = {};
+        allMachinesData[id].amostra = novoEstado;
+    }
+    const ref = (typeof maquinasRef !== 'undefined' && maquinasRef && typeof maquinasRef.child === 'function')
+        ? maquinasRef.child(id).child('amostra')
+        : (window.db ? window.db.ref(`maquinas/${id}/amostra`) : null);
+    const after = () => {
+        if (typeof applyFilters === 'function') applyFilters();
+        if (typeof mostrarNotificacao === 'function') {
+            mostrarNotificacao(novoEstado ? `Máquina ${id} marcada como amostra.` : `Máquina ${id} removida de amostra.`, 'info');
+        }
+    };
+    if (ref && typeof ref.set === 'function') {
+        ref.set(novoEstado).then(after).catch(err => {
+            if (typeof allMachinesData !== 'undefined' && allMachinesData[id]) allMachinesData[id].amostra = atual;
+            if (typeof mostrarNotificacao === 'function') mostrarNotificacao(`Erro ao atualizar amostra: ${err.message}`, 'error');
+        });
+    } else {
+        after();
+    }
+}
+
+window.wmCliqueMaquinaAmostraOuModal = wmCliqueMaquinaAmostraOuModal;
+window.wmAbrirModalMaquinaPorCard = wmAbrirModalMaquinaPorCard;
+
 // ================= INICIALIZAÇÃO =================
 function initCardsDashboard() {
     console.log("🔄 Inicializando Dashboard de Cartões...");
@@ -499,7 +555,7 @@ function createMachineCardHTML(machineId, machineData) {
                 <div class="maintenance-overlay"></div>
                 <div class="maintenance-content">
                     <div class="card-header">
-                        <button type="button" class="machine-name wm-machine-title-btn" onclick="wmAbrirModalMaquinaPorCard('${machineId}')" title="Abrir histórico da máquina">
+                        <button type="button" class="machine-name wm-machine-title-btn" onclick="return wmCliqueMaquinaAmostraOuModal(event, '${machineId}')" title="1 clique: amostra | 2 cliques: gráfico">
                             <i class="fas fa-industry"></i>
                             ${machineId}
                             ${prefixKey ? `<span class="machine-prefix" title="${prefixKey}"> - ${prefixKey}</span>` : ''}
@@ -555,7 +611,7 @@ function createMachineCardHTML(machineId, machineData) {
             ${urgentIndicator}
             
             <div class="card-header">
-                <button type="button" class="machine-name wm-machine-title-btn" onclick="wmAbrirModalMaquinaPorCard('${machineId}')" title="Abrir histórico da máquina">
+                <button type="button" class="machine-name wm-machine-title-btn" onclick="return wmCliqueMaquinaAmostraOuModal(event, '${machineId}')" title="1 clique: amostra | 2 cliques: gráfico">
                     <i class="fas fa-industry"></i>
                     ${machineId}
                     ${prefixKey ? `<span class="machine-prefix" title="${prefixKey}"> - ${prefixKey}</span>` : ''}
@@ -765,7 +821,7 @@ function createMachineCard(machineId, machineData) {
         ${urgentIndicator}
         
         <div class="card-header">
-            <button type="button" class="machine-name wm-machine-title-btn" onclick="wmAbrirModalMaquinaPorCard('${machineId}')" title="Abrir histórico da máquina">
+            <button type="button" class="machine-name wm-machine-title-btn" onclick="return wmCliqueMaquinaAmostraOuModal(event, '${machineId}')" title="1 clique: amostra | 2 cliques: gráfico">
                 <i class="fas fa-industry"></i>
                 Máquina ${machineId}
                 ${prefixKey ? `<span class="machine-prefix" title="${prefixKey}"> - ${prefixKey}</span>` : ''}

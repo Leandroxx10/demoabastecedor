@@ -188,8 +188,15 @@
     const range = rangeFor(iso, period);
     summary.innerHTML = `<strong>${rows.length}</strong><span>registro(s)</span><small>${brFromISO(iso)} · ${range.label}</small>`;
     tbody.innerHTML = rows.map(r => `<tr><td>${esc(r.data)}</td><td>${esc(r.hora)}</td><td>${r.molde}</td><td>${r.blank}</td><td>${r.neck_ring}</td><td>${r.funil}</td></tr>`).join('');
-    empty.hidden = rows.length > 0;
-    empty.style.display = rows.length > 0 ? 'none' : 'flex';
+    if (rows.length > 0) {
+      empty.hidden = true;
+      empty.style.display = 'none';
+      empty.setAttribute('aria-hidden', 'true');
+    } else {
+      empty.hidden = false;
+      empty.style.display = 'flex';
+      empty.removeAttribute('aria-hidden');
+    }
     if (chart && typeof chart.destroy === 'function') chart.destroy();
     chart = null;
     if (!window.Chart || !canvas || rows.length === 0) return;
@@ -239,11 +246,11 @@
 })();
 
 
-// V11: abrir o gráfico ao clicar no card da máquina, não apenas no texto do título.
-document.addEventListener('click', function wmDashboardMachineCardDelegatedClick(event) {
+// V12: duplo clique no card da máquina abre o gráfico. Clique simples fica livre para amostra/ações existentes.
+document.addEventListener('dblclick', function wmDashboardMachineCardDelegatedClick(event) {
   const card = event.target.closest && event.target.closest('.machine-card[data-machine-id]');
   if (!card) return;
-  if (event.target.closest('button, a, input, select, textarea, .details-btn, .carousel-btn, .wm-card-time-meta')) return;
+  if (event.target.closest('a, input, select, textarea, .details-btn, .carousel-btn, .wm-card-time-meta')) return;
   const id = card.getAttribute('data-machine-id');
   if (id && typeof window.wmAbrirModalMaquinaDashboard === 'function') {
     event.preventDefault();
@@ -251,3 +258,9 @@ document.addEventListener('click', function wmDashboardMachineCardDelegatedClick
     window.wmAbrirModalMaquinaDashboard(id);
   }
 }, true);
+
+(function(){
+  const st = document.createElement('style');
+  st.textContent = '.wm-machine-modal-empty[hidden]{display:none!important}.wm-machine-modal-empty[aria-hidden="true"]{display:none!important}';
+  document.head.appendChild(st);
+})();

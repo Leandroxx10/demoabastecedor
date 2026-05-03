@@ -486,8 +486,8 @@ function criarPainel(maquinas) {
                     <button
                         type="button"
                         class="maquina-id maquina-id-clickable ${maquinaAmostra ? "ativa" : ""}"
-                        onclick="wmAbrirModalMaquinaDashboard('${id}')"
-                        title="Abrir histórico rápido da máquina ${id}"
+                        onclick="return wmCliqueMaquinaAmostraOuModal(event, '${id}')"
+                        title="1 clique: amostra | 2 cliques: gráfico da máquina ${id}"
                         aria-pressed="${maquinaAmostra}">
                         <i class="fas fa-industry"></i>
                         <span class="maquina-texto">Máquina</span><span class="maquina-codigo">${id}</span>
@@ -879,6 +879,30 @@ function atualizarPrefixo(maquinaId, prefixoId) {
     mostrarNotificacao(`Prefixo atualizado para: ${prefixoId}`, "info");
 }
 
+
+// V12: 1 clique no código da máquina alterna amostra; 2 cliques rápidos abrem o gráfico.
+const wmMachineClickTimers = {};
+function wmCliqueMaquinaAmostraOuModal(event, maquinaId) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    const id = String(maquinaId);
+    if (wmMachineClickTimers[id]) {
+        clearTimeout(wmMachineClickTimers[id]);
+        delete wmMachineClickTimers[id];
+        if (typeof window.wmAbrirModalMaquinaDashboard === 'function') {
+            window.wmAbrirModalMaquinaDashboard(id);
+        }
+        return false;
+    }
+    wmMachineClickTimers[id] = setTimeout(() => {
+        delete wmMachineClickTimers[id];
+        alternarMaquinaAmostra(id);
+    }, 260);
+    return false;
+}
+window.wmCliqueMaquinaAmostraOuModal = wmCliqueMaquinaAmostraOuModal;
 
 function alternarMaquinaAmostra(maquinaId) {
     const atual = Boolean(dadosMaquinas?.[maquinaId]?.amostra);
