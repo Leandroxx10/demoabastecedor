@@ -1,0 +1,246 @@
+/* WMoldes - Atalhos rápidos (V13)
+   CSS isolado para não interferir no layout existente. */
+.shortcut-top-btn {
+    border: 1px solid #dbe4f0;
+    background: #ffffff;
+    color: #1e293b;
+    min-height: 54px;
+    padding: 0 22px;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, .07);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.shortcut-top-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, .12);
+    background: #f8fafc;
+}
+.shortcut-top-btn i { color: #0ea5e9; }
+
+.wm-shortcut-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 99980;
+    background: rgba(15, 23, 42, .62);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+.wm-shortcut-backdrop.open { display: flex; }
+
+.wm-shortcut-modal {
+    width: min(980px, 96vw);
+    max-height: 90vh;
+    overflow: hidden;
+    background: #fff;
+    color: #1e293b;
+    border-radius: 22px;
+    box-shadow: 0 28px 80px rgba(15, 23, 42, .35);
+    border: 1px solid rgba(226, 232, 240, .9);
+    display: flex;
+    flex-direction: column;
+}
+.wm-shortcut-header {
+    padding: 22px 26px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    border-bottom: 1px solid #e2e8f0;
+}
+.wm-shortcut-title {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.wm-shortcut-title h3 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 900;
+    color: #0f172a;
+}
+.wm-shortcut-title p {
+    margin: 0;
+    color: #64748b;
+    font-size: 14px;
+}
+.wm-shortcut-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.wm-shortcut-add,
+.wm-shortcut-close,
+.wm-shortcut-save,
+.wm-shortcut-cancel {
+    border: 0;
+    border-radius: 14px;
+    font-weight: 900;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.wm-shortcut-add {
+    background: #2563eb;
+    color: #fff;
+    padding: 13px 18px;
+    box-shadow: 0 12px 28px rgba(37, 99, 235, .25);
+}
+.wm-shortcut-close {
+    width: 44px;
+    height: 44px;
+    justify-content: center;
+    background: #f8fafc;
+    color: #334155;
+    border: 1px solid #dbe4f0;
+    font-size: 18px;
+}
+.wm-shortcut-body {
+    padding: 22px 26px 26px;
+    overflow: auto;
+}
+.wm-shortcut-form {
+    display: none;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 14px;
+    padding: 16px;
+    margin-bottom: 18px;
+    border: 1px solid #dbe4f0;
+    background: #f8fafc;
+    border-radius: 18px;
+}
+.wm-shortcut-form.open { display: grid; }
+.wm-shortcut-field.full { grid-column: 1 / -1; }
+.wm-shortcut-field label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 12px;
+    font-weight: 900;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+.wm-shortcut-field input,
+.wm-shortcut-field textarea {
+    width: 100%;
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    border-radius: 12px;
+    padding: 12px 13px;
+    color: #0f172a;
+    font-size: 14px;
+    outline: none;
+}
+.wm-shortcut-field textarea {
+    min-height: 72px;
+    resize: vertical;
+}
+.wm-shortcut-field input:focus,
+.wm-shortcut-field textarea:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+}
+.wm-shortcut-form-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+.wm-shortcut-save { background: #16a34a; color: #fff; padding: 12px 16px; }
+.wm-shortcut-cancel { background: #e2e8f0; color: #334155; padding: 12px 16px; }
+
+.wm-shortcut-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 14px;
+}
+.wm-shortcut-card {
+    position: relative;
+    border: 1px solid #dbe4f0;
+    border-radius: 18px;
+    background: linear-gradient(180deg, #ffffff, #f8fafc);
+    padding: 16px 46px 16px 16px;
+    min-height: 92px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, .06);
+    transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.wm-shortcut-card:hover {
+    transform: translateY(-2px);
+    border-color: #2563eb;
+    box-shadow: 0 14px 28px rgba(37, 99, 235, .13);
+}
+.wm-shortcut-card strong {
+    color: #0f172a;
+    font-size: 16px;
+    line-height: 1.25;
+    word-break: break-word;
+}
+.wm-shortcut-card small {
+    color: #64748b;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.wm-shortcut-card .wm-shortcut-open-icon {
+    color: #2563eb;
+    font-size: 18px;
+}
+.wm-shortcut-delete {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    border: 1px solid #fecaca;
+    background: #fff1f2;
+    color: #dc2626;
+    border-radius: 10px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.wm-shortcut-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #64748b;
+    border: 1px dashed #cbd5e1;
+    padding: 34px 16px;
+    border-radius: 18px;
+    background: #f8fafc;
+}
+body.dark-mode .shortcut-top-btn,
+body.dark-mode .wm-shortcut-modal,
+body.dark-mode .wm-shortcut-card { background: #111827; color: #e5e7eb; border-color: #334155; }
+body.dark-mode .wm-shortcut-title h3,
+body.dark-mode .wm-shortcut-card strong { color: #f8fafc; }
+body.dark-mode .wm-shortcut-title p,
+body.dark-mode .wm-shortcut-card small { color: #94a3b8; }
+body.dark-mode .wm-shortcut-form { background: #0f172a; border-color: #334155; }
+body.dark-mode .wm-shortcut-field input,
+body.dark-mode .wm-shortcut-field textarea { background: #020617; color: #f8fafc; border-color: #334155; }
+body.dark-mode .wm-shortcut-close { background: #0f172a; color: #f8fafc; border-color: #334155; }
+
+@media (max-width: 720px) {
+    .wm-shortcut-form { grid-template-columns: 1fr; }
+    .wm-shortcut-header { align-items: flex-start; flex-direction: column; }
+    .wm-shortcut-actions { width: 100%; justify-content: space-between; }
+    .shortcut-top-btn { width: 100%; }
+}
