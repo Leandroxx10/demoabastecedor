@@ -176,6 +176,22 @@
     return true;
   }
 
+  async function touchMachineUpdateMeta(machineId, eventTimeMs) {
+    try {
+      const payload = {
+        updatedAt: eventTimeMs || getServerNowMs(),
+        lastUpdated: eventTimeMs || getServerNowMs(),
+        ultimaAtualizacao: eventTimeMs || getServerNowMs()
+      };
+      if (window.firebase && window.firebase.database) {
+        payload.updatedServerAt = window.firebase.database.ServerValue.TIMESTAMP;
+      }
+      await window.maquinasRef.child(machineId).update(payload);
+    } catch (err) {
+      console.warn('[WMHistory] Não foi possível atualizar metadados de horário:', err);
+    }
+  }
+
   async function atomicDelta(machineId, field, delta, meta) {
     await ensureRefs();
     const normalizedField = normalizeField(field);
@@ -189,6 +205,7 @@
     });
     if (!result.committed) throw new Error('Transação cancelada pelo Firebase.');
     committedValue = n(result.snapshot && result.snapshot.val());
+    await touchMachineUpdateMeta(machineId, eventTimeMs);
     const machineData = await readMachine(machineId);
     scheduleMachineSnapshot(machineId, machineData, {
       ...(meta || {}),
@@ -205,6 +222,7 @@
     const normalizedField = normalizeField(field);
     const eventTimeMs = getServerNowMs();
     await window.maquinasRef.child(machineId).child(normalizedField).set(n(value));
+    await touchMachineUpdateMeta(machineId, eventTimeMs);
     const machineData = await readMachine(machineId);
     scheduleMachineSnapshot(machineId, machineData, {
       ...(meta || {}),

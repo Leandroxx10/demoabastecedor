@@ -362,8 +362,25 @@ function inicializarFirebaseListeners() {
 // ====================================================
 // METADADOS COMPACTOS DO CARD (HORÁRIO ATUAL / ÚLTIMA ATUALIZAÇÃO)
 // ====================================================
+function wmTimestampCardCompat(value) {
+    if (value === undefined || value === null || value === '') return 0;
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    if (typeof value === 'object') {
+        if (typeof value.seconds === 'number') return value.seconds * 1000;
+        if (typeof value._seconds === 'number') return value._seconds * 1000;
+    }
+    const raw = String(value).trim();
+    if (!raw) return 0;
+    if (/^\d+$/.test(raw)) return Number(raw);
+    const iso = Date.parse(raw);
+    if (Number.isFinite(iso)) return iso;
+    const br = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+    if (br) return new Date(`${br[3]}-${br[2]}-${br[1]}T${br[4]||'00'}:${br[5]||'00'}:${br[6]||'00'}-03:00`).getTime();
+    return 0;
+}
+
 function wmFormatarHoraCard(timestamp) {
-    const n = Number(timestamp || 0);
+    const n = wmTimestampCardCompat(timestamp);
     if (!n) return '--:--';
     try {
         return new Intl.DateTimeFormat('pt-BR', {
@@ -379,16 +396,17 @@ function wmFormatarHoraCard(timestamp) {
 
 function wmObterUltimaAtualizacaoMaquina(maquina) {
     if (!maquina) return 0;
-    return Number(
-        maquina.updatedAt ||
-        maquina.updatedServerAt ||
-        maquina.lastUpdated ||
-        maquina.lastUpdate ||
-        maquina.ultimaAtualizacao ||
-        maquina.timestamp ||
-        maquina.createdAt ||
-        0
-    );
+    const values = [
+        maquina.updatedServerAt,
+        maquina.updatedAt,
+        maquina.lastUpdated,
+        maquina.lastUpdate,
+        maquina.ultimaAtualizacao,
+        maquina.timestamp,
+        maquina.createdAt,
+        maquina.created_at
+    ].map(wmTimestampCardCompat).filter(Boolean);
+    return values.length ? Math.max(...values) : 0;
 }
 
 function wmRenderCardTimeMeta(maquina) {
@@ -408,7 +426,7 @@ function wmAtualizarHorariosAtuaisCards() {
 
 if (!window.__wmCardClockStarted) {
     window.__wmCardClockStarted = true;
-    setInterval(wmAtualizarHorariosAtuaisCards, 30000);
+    setInterval(wmAtualizarHorariosAtuaisCards, 1000);
 }
 
 // FUNÇÃO: CRIAR PAINEL DE MÁQUINAS
@@ -840,6 +858,7 @@ async function alterar(maquinaId, tipo, delta) {
             const tx = await ref.transaction(current => Math.max(0, (parseInt(current, 10) || 0) + Number(delta || 0)));
             if (!tx.committed) throw new Error('Transação cancelada.');
             committedValue = parseInt(tx.snapshot.val(), 10) || 0;
+            await wmTouchMachineMetaFallback(maquinaId);
         }
         if (element) element.textContent = committedValue;
     } catch (error) {
@@ -1657,6 +1676,18 @@ function toggleModoDigitado(maquinaId, tipo) {
     }
 }
 
+
+async function wmTouchMachineMetaFallback(maquinaId) {
+    try {
+        const now = Date.now();
+        const payload = { updatedAt: now, lastUpdated: now, ultimaAtualizacao: now };
+        if (window.firebase && firebase.database) payload.updatedServerAt = firebase.database.ServerValue.TIMESTAMP;
+        await db.ref(`maquinas/${maquinaId}`).update(payload);
+    } catch (e) {
+        console.warn('Não foi possível atualizar horário da máquina:', e);
+    }
+}
+
 async function atualizarPorInput(maquinaId, tipo, valor) {
     const spanElement = document.getElementById(`${maquinaId}-${tipo}`);
     const inputElement = document.getElementById(`input-${maquinaId}-${tipo}`);
@@ -1679,6 +1710,7 @@ async function atualizarPorInput(maquinaId, tipo, valor) {
             });
         } else {
             await db.ref(`maquinas/${maquinaId}/${tipo}`).set(novoValor);
+            await wmTouchMachineMetaFallback(maquinaId);
         }
     } catch (error) {
         console.error('❌ Erro ao atualizar valor digitado:', error);

@@ -41,8 +41,19 @@
     return '';
   }
   function parseDateTimeFromRecord(r){
-    const numeric = Number(r.timestamp || r.serverTimestamp || r.createdAt || r.updatedServerAt || r.updatedAt || r.lastUpdated || 0);
-    if (numeric > 0) return numeric;
+    const candidates = [r.timestamp, r.serverTimestamp, r.createdAt, r.updatedServerAt, r.updatedAt, r.lastUpdated, r.created_at];
+    for (const c of candidates) {
+      if (typeof c === 'number' && c > 0) return c;
+      if (c && typeof c === 'object') {
+        if (typeof c.seconds === 'number') return c.seconds * 1000;
+        if (typeof c._seconds === 'number') return c._seconds * 1000;
+      }
+      if (typeof c === 'string') {
+        if (/^\d+$/.test(c) && Number(c) > 0) return Number(c);
+        const parsed = Date.parse(c);
+        if (Number.isFinite(parsed)) return parsed;
+      }
+    }
     const iso = toISOFromAnyDate(r.dataISO || r.data || r.date || r.dia);
     const hora = String(r.hora || r.time || r.createdTime || r.horario || '00:00').slice(0,5);
     if (iso) {
@@ -178,6 +189,7 @@
     summary.innerHTML = `<strong>${rows.length}</strong><span>registro(s)</span><small>${brFromISO(iso)} · ${range.label}</small>`;
     tbody.innerHTML = rows.map(r => `<tr><td>${esc(r.data)}</td><td>${esc(r.hora)}</td><td>${r.molde}</td><td>${r.blank}</td><td>${r.neck_ring}</td><td>${r.funil}</td></tr>`).join('');
     empty.hidden = rows.length > 0;
+    empty.style.display = rows.length > 0 ? 'none' : 'flex';
     if (chart && typeof chart.destroy === 'function') chart.destroy();
     chart = null;
     if (!window.Chart || !canvas || rows.length === 0) return;
@@ -210,6 +222,7 @@
     const period = activePeriod();
     const empty = overlay.querySelector('#wmMachineModalEmpty');
     empty.hidden = false;
+    empty.style.display = 'flex';
     empty.textContent = 'Carregando...';
     try {
       const rows = await loadRows(currentMachine, iso, period);
@@ -218,8 +231,23 @@
     } catch (err) {
       console.error('Erro no modal rápido da máquina:', err);
       empty.hidden = false;
+      empty.style.display = 'flex';
       empty.textContent = 'Erro ao carregar histórico desta máquina.';
     }
   };
   window.wmFecharModalMaquinaDashboard = function(){ document.getElementById('wmMachineQuickModal')?.classList.remove('open'); };
 })();
+
+
+// V11: abrir o gráfico ao clicar no card da máquina, não apenas no texto do título.
+document.addEventListener('click', function wmDashboardMachineCardDelegatedClick(event) {
+  const card = event.target.closest && event.target.closest('.machine-card[data-machine-id]');
+  if (!card) return;
+  if (event.target.closest('button, a, input, select, textarea, .details-btn, .carousel-btn, .wm-card-time-meta')) return;
+  const id = card.getAttribute('data-machine-id');
+  if (id && typeof window.wmAbrirModalMaquinaDashboard === 'function') {
+    event.preventDefault();
+    event.stopPropagation();
+    window.wmAbrirModalMaquinaDashboard(id);
+  }
+}, true);

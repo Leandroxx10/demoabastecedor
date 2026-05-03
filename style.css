@@ -2509,3 +2509,11 @@ body.access-page { min-height: 100vh; overflow-x: hidden; background: radial-gra
 .machine-card .wm-card-time-meta strong { color: #0f172a; font-size: 10px; font-weight: 900; }
 .dark-mode .machine-card .wm-card-time-meta { background: rgba(15,23,42,.72); border-color: rgba(148,163,184,.22); color: #94a3b8; }
 .dark-mode .machine-card .wm-card-time-meta strong { color: #f8fafc; }
+
+
+/* WM V11 - correções do modal rápido e relógios dos cards */
+.wm-machine-modal-empty[hidden] { display: none !important; }
+.wm-machine-modal-empty { pointer-events: none; }
+.machine-card[data-machine-id] { cursor: pointer; }
+.machine-card .details-btn, .machine-card .wm-card-time-meta, .machine-card .wm-machine-title-btn { cursor: pointer; }
+.wm-card-time-meta { z-index: 5; }

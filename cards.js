@@ -28,8 +28,42 @@ let connectionStatusEl;
 // ====================================================
 // WM V10 - horários compactos e clique no código/prefixo da máquina
 // ====================================================
+function wmTimestampCardCompat(value) {
+    if (value === undefined || value === null || value === '') return 0;
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    if (typeof value === 'object') {
+        if (typeof value.seconds === 'number') return value.seconds * 1000;
+        if (typeof value._seconds === 'number') return value._seconds * 1000;
+    }
+    const raw = String(value).trim();
+    if (!raw) return 0;
+    if (/^\d+$/.test(raw)) return Number(raw);
+    const iso = Date.parse(raw);
+    if (Number.isFinite(iso)) return iso;
+    const br = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+    if (br) return new Date(`${br[3]}-${br[2]}-${br[1]}T${br[4]||'00'}:${br[5]||'00'}:${br[6]||'00'}-03:00`).getTime();
+    return 0;
+}
+
+function wmTimestampCardCompatDashboard(value) {
+    if (value === undefined || value === null || value === '') return 0;
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    if (typeof value === 'object') {
+        if (typeof value.seconds === 'number') return value.seconds * 1000;
+        if (typeof value._seconds === 'number') return value._seconds * 1000;
+    }
+    const raw = String(value).trim();
+    if (!raw) return 0;
+    if (/^\d+$/.test(raw)) return Number(raw);
+    const iso = Date.parse(raw);
+    if (Number.isFinite(iso)) return iso;
+    const br = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+    if (br) return new Date(`${br[3]}-${br[2]}-${br[1]}T${br[4]||'00'}:${br[5]||'00'}:${br[6]||'00'}-03:00`).getTime();
+    return 0;
+}
+
 function wmFormatarHoraCardDashboard(timestamp) {
-    const n = Number(timestamp || 0);
+    const n = wmTimestampCardCompatDashboard(timestamp);
     if (!n) return '--:--';
     try {
         return new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }).format(new Date(n));
@@ -41,16 +75,17 @@ function wmFormatarHoraCardDashboard(timestamp) {
 
 function wmObterUltimaAtualizacaoDashboard(maquina) {
     if (!maquina) return 0;
-    return Number(
-        maquina.updatedServerAt ||
-        maquina.updatedAt ||
-        maquina.lastUpdated ||
-        maquina.lastUpdate ||
-        maquina.ultimaAtualizacao ||
-        maquina.timestamp ||
-        maquina.createdAt ||
-        0
-    );
+    const values = [
+        maquina.updatedServerAt,
+        maquina.updatedAt,
+        maquina.lastUpdated,
+        maquina.lastUpdate,
+        maquina.ultimaAtualizacao,
+        maquina.timestamp,
+        maquina.createdAt,
+        maquina.created_at
+    ].map(wmTimestampCardCompatDashboard).filter(Boolean);
+    return values.length ? Math.max(...values) : 0;
 }
 
 function wmRenderCardTimeMetaDashboard(maquina) {
