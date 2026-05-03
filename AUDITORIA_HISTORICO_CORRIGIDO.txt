@@ -1,0 +1,29 @@
+AUDITORIA E CORREÇÃO DO HISTÓRICO - WMoldes
+
+Correções aplicadas em 2026-05-02:
+
+1. Criado wm-history-core.js
+   - Usa America/Sao_Paulo de forma consistente.
+   - Usa .info/serverTimeOffset para estimar o horário do servidor.
+   - Salva histórico sempre em /historico/{maquina}/{registro}.
+   - Inclui timestamp, serverTimestamp, dataISO, data BR, hora, horaCompleta, horaNum e minutoNum.
+
+2. Correção de concorrência
+   - Alterações rápidas por botão agora usam transaction() no Firebase.
+   - Duas abas ou dois usuários clicando ao mesmo tempo não sobrescrevem o valor um do outro.
+
+3. Correção de registros invisíveis no gráfico
+   - O painel agora lê o caminho correto /historico/{maquina}.
+   - O gráfico também tenta recuperar registros legados que foram salvos incorretamente na raiz de /historico.
+   - Novos logs de auditoria não poluem mais /historico; ficam em /historico_auditoria.
+
+4. Correção do horário do lançamento
+   - O histórico passa a ser gravado no momento do lançamento, não apenas 10 segundos depois pelo auto-history-service.
+   - O auto-history-service permanece como redundância, mas deixa de ser a fonte principal do horário.
+
+5. Painel administrativo
+   - saveMachineChanges agora salva snapshot real_time com os valores atuais.
+   - O saveImmediateHistory antigo foi substituído por gravação normalizada.
+
+Observação técnica:
+Não é possível garantir 100% em produção sem testar contra o Firebase real e as regras ativas do banco. O pacote corrige os defeitos encontrados no código-fonte e mantém compatibilidade com dados antigos.

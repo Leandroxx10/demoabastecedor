@@ -751,19 +751,19 @@ document.addEventListener('click', function(event) {
 // FUNÇÃO: ALTERAR QUANTIDADE DE PEÇAS
 // ====================================================
 
-function alterar(maquinaId, tipo, delta) {
+async function alterar(maquinaId, tipo, delta) {
     if (isMachineInMaintenance(maquinaId)) {
         mostrarNotificacao('Máquina em parada para manutenção.', 'warning');
         return;
     }
-    // 1. Atualização IMEDIATA na tela (SEM esperar Firebase)
-    const element = document.getElementById(`${maquinaId}-${tipo}`);
+
+    const normalizedTipo = (window.WMHistory && WMHistory.normalizeField) ? WMHistory.normalizeField(tipo) : tipo;
+    const element = document.getElementById(`${maquinaId}-${tipo}`) || document.getElementById(`${maquinaId}-${normalizedTipo}`);
+    const previousValue = parseInt(element?.textContent) || 0;
+    const optimisticValue = Math.max(0, previousValue + Number(delta || 0));
+
     if (element) {
-        const currentValue = parseInt(element.textContent) || 0;
-        const newValue = Math.max(0, currentValue + delta);
-        element.textContent = newValue;
-        
-        // Feedback visual RÁPIDO
+        element.textContent = optimisticValue;
         element.style.transform = 'scale(1.1)';
         element.style.color = '#0ea5e9';
         setTimeout(() => {
@@ -771,12 +771,26 @@ function alterar(maquinaId, tipo, delta) {
             element.style.color = '';
         }, 200);
     }
-    
-    // 2. Enviar para Firebase EM SEGUNDO PLANO (não bloqueia)
-    setTimeout(() => {
-        const ref = db.ref(`maquinas/${maquinaId}/${tipo}`);
-        ref.set(parseInt(element.textContent) || 0);
-    }, 0);
+
+    try {
+        let committedValue;
+        if (window.WMHistory && typeof WMHistory.atomicDelta === 'function') {
+            committedValue = await WMHistory.atomicDelta(maquinaId, normalizedTipo, delta, {
+                origem: 'abastecedor_botao',
+                field: normalizedTipo
+            });
+        } else {
+            const ref = db.ref(`maquinas/${maquinaId}/${normalizedTipo}`);
+            const tx = await ref.transaction(current => Math.max(0, (parseInt(current, 10) || 0) + Number(delta || 0)));
+            if (!tx.committed) throw new Error('Transação cancelada.');
+            committedValue = parseInt(tx.snapshot.val(), 10) || 0;
+        }
+        if (element) element.textContent = committedValue;
+    } catch (error) {
+        console.error('❌ Erro ao alterar quantidade:', error);
+        if (element) element.textContent = previousValue;
+        mostrarNotificacao(`Erro ao salvar alteração da máquina ${maquinaId}.`, 'error');
+    }
 }
 
 // ====================================================
@@ -1587,35 +1601,44 @@ function toggleModoDigitado(maquinaId, tipo) {
     }
 }
 
-function atualizarPorInput(maquinaId, tipo, valor) {
+async function atualizarPorInput(maquinaId, tipo, valor) {
     const spanElement = document.getElementById(`${maquinaId}-${tipo}`);
     const inputElement = document.getElementById(`input-${maquinaId}-${tipo}`);
     const btnElement = inputElement.closest('.controles').querySelector('.btn-digitado');
-    
-    // Converter valor para número
-    const novoValor = parseInt(valor) || 0;
-    
-    // Atualizar visualmente
+    const valorAtual = parseInt(spanElement.textContent) || 0;
+    const novoValor = Math.max(0, parseInt(valor, 10) || 0);
+
     spanElement.textContent = novoValor;
     inputElement.value = novoValor;
-    
-    // Voltar para modo visual
     spanElement.style.display = 'block';
     inputElement.style.display = 'none';
     btnElement.innerHTML = '<i class="fas fa-keyboard"></i>';
     btnElement.classList.remove('ativo-digitacao');
-    
-    // Atualizar no banco de dados
-    db.ref(`maquinas/${maquinaId}/${tipo}`).set(novoValor);
-    
-    // Feedback
+
+    try {
+        if (window.WMHistory && typeof WMHistory.setFieldAndSnapshot === 'function') {
+            await WMHistory.setFieldAndSnapshot(maquinaId, tipo, novoValor, {
+                origem: 'abastecedor_digitacao',
+                field: tipo
+            });
+        } else {
+            await db.ref(`maquinas/${maquinaId}/${tipo}`).set(novoValor);
+        }
+    } catch (error) {
+        console.error('❌ Erro ao atualizar valor digitado:', error);
+        spanElement.textContent = valorAtual;
+        inputElement.value = valorAtual;
+        mostrarNotificacao(`Erro ao salvar ${tipo} da máquina ${maquinaId}.`, 'error');
+        return;
+    }
+
     spanElement.style.transform = 'scale(1.1)';
     spanElement.style.color = '#0ea5e9';
     setTimeout(() => {
         spanElement.style.transform = '';
         spanElement.style.color = '';
     }, 200);
-    
+
     mostrarNotificacao(`${tipo.charAt(0).toUpperCase() + tipo.slice(1)} da máquina ${maquinaId} atualizado para ${novoValor}`, "info");
 }
 
