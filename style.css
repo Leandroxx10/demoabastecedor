@@ -2475,3 +2475,37 @@ body.access-page { min-height: 100vh; overflow-x: hidden; background: radial-gra
     .wm-machine-periods { width: 100%; overflow-x: auto; }
     .wm-card-time-meta { min-width: 74px; font-size: 8px; }
 }
+
+
+/* WM V10 - horário atual / última atualização no card do dashboard */
+.machine-card .card-header { align-items: flex-start; gap: 8px; }
+.wm-machine-title-btn {
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    cursor: pointer !important;
+    text-align: left !important;
+    color: inherit !important;
+    font: inherit !important;
+}
+.wm-machine-title-btn:hover .machine-prefix,
+.wm-machine-title-btn:hover { color: #2563eb !important; }
+.machine-card .wm-card-time-meta {
+    margin-left: auto;
+    min-width: 78px;
+    padding: 4px 6px;
+    border: 1px solid rgba(148, 163, 184, .35);
+    border-radius: 8px;
+    background: rgba(248, 250, 252, .92);
+    color: #64748b;
+    font-size: 9px;
+    line-height: 1.2;
+    text-align: right;
+    box-shadow: none;
+}
+.machine-card .wm-card-time-meta div + div { margin-top: 2px; }
+.machine-card .wm-card-time-meta span { display: inline-block; margin-right: 3px; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; }
+.machine-card .wm-card-time-meta strong { color: #0f172a; font-size: 10px; font-weight: 900; }
+.dark-mode .machine-card .wm-card-time-meta { background: rgba(15,23,42,.72); border-color: rgba(148,163,184,.22); color: #94a3b8; }
+.dark-mode .machine-card .wm-card-time-meta strong { color: #f8fafc; }

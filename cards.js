@@ -24,6 +24,63 @@ let lowStockMachinesEl;
 let normalMachinesEl;
 let connectionStatusEl;
 
+
+// ====================================================
+// WM V10 - horários compactos e clique no código/prefixo da máquina
+// ====================================================
+function wmFormatarHoraCardDashboard(timestamp) {
+    const n = Number(timestamp || 0);
+    if (!n) return '--:--';
+    try {
+        return new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }).format(new Date(n));
+    } catch (e) {
+        const d = new Date(n);
+        return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+}
+
+function wmObterUltimaAtualizacaoDashboard(maquina) {
+    if (!maquina) return 0;
+    return Number(
+        maquina.updatedServerAt ||
+        maquina.updatedAt ||
+        maquina.lastUpdated ||
+        maquina.lastUpdate ||
+        maquina.ultimaAtualizacao ||
+        maquina.timestamp ||
+        maquina.createdAt ||
+        0
+    );
+}
+
+function wmRenderCardTimeMetaDashboard(maquina) {
+    const ultima = wmObterUltimaAtualizacaoDashboard(maquina);
+    return `
+        <div class="wm-card-time-meta" title="Horário atual e última atualização da máquina">
+            <div><span>Atual</span><strong class="wm-current-time" data-wm-current-time="1">${wmFormatarHoraCardDashboard(Date.now())}</strong></div>
+            <div><span>Última</span><strong>${wmFormatarHoraCardDashboard(ultima)}</strong></div>
+        </div>`;
+}
+
+function wmAtualizarHorariosAtuaisCardsDashboard() {
+    document.querySelectorAll('[data-wm-current-time="1"]').forEach(el => {
+        el.textContent = wmFormatarHoraCardDashboard(Date.now());
+    });
+}
+
+if (!window.__wmDashboardCardClockStarted) {
+    window.__wmDashboardCardClockStarted = true;
+    setInterval(wmAtualizarHorariosAtuaisCardsDashboard, 1000);
+}
+
+function wmAbrirModalMaquinaPorCard(machineId) {
+    if (typeof window.wmAbrirModalMaquinaDashboard === 'function') {
+        window.wmAbrirModalMaquinaDashboard(String(machineId));
+    } else if (typeof openMachineDetails === 'function') {
+        openMachineDetails(String(machineId));
+    }
+}
+
 // ================= INICIALIZAÇÃO =================
 function initCardsDashboard() {
     console.log("🔄 Inicializando Dashboard de Cartões...");
@@ -407,12 +464,12 @@ function createMachineCardHTML(machineId, machineData) {
                 <div class="maintenance-overlay"></div>
                 <div class="maintenance-content">
                     <div class="card-header">
-                        <div class="machine-name">
+                        <button type="button" class="machine-name wm-machine-title-btn" onclick="wmAbrirModalMaquinaPorCard('${machineId}')" title="Abrir histórico da máquina">
                             <i class="fas fa-industry"></i>
                             ${machineId}
                             ${prefixKey ? `<span class="machine-prefix" title="${prefixKey}"> - ${prefixKey}</span>` : ''}
-                        </div>
-                        <span class="forno-badge ${forno}">Forno ${forno}</span>
+                        </button>
+                        ${wmRenderCardTimeMetaDashboard(machineData)}
                     </div>
                     
                     <div class="maintenance-indicator">
@@ -463,13 +520,13 @@ function createMachineCardHTML(machineId, machineData) {
             ${urgentIndicator}
             
             <div class="card-header">
-                <div class="machine-name">
+                <button type="button" class="machine-name wm-machine-title-btn" onclick="wmAbrirModalMaquinaPorCard('${machineId}')" title="Abrir histórico da máquina">
                     <i class="fas fa-industry"></i>
                     ${machineId}
                     ${prefixKey ? `<span class="machine-prefix" title="${prefixKey}"> - ${prefixKey}</span>` : ''}
                     ${commentIcon}
-                </div>
-                
+                </button>
+                ${wmRenderCardTimeMetaDashboard(machineData)}
             </div>
             
             ${comment.text ? `
@@ -673,13 +730,13 @@ function createMachineCard(machineId, machineData) {
         ${urgentIndicator}
         
         <div class="card-header">
-            <div class="machine-name">
+            <button type="button" class="machine-name wm-machine-title-btn" onclick="wmAbrirModalMaquinaPorCard('${machineId}')" title="Abrir histórico da máquina">
                 <i class="fas fa-industry"></i>
                 Máquina ${machineId}
                 ${prefixKey ? `<span class="machine-prefix" title="${prefixKey}"> - ${prefixKey}</span>` : ''}
                 ${commentIcon}
-            </div>
-            
+            </button>
+            ${wmRenderCardTimeMetaDashboard(machineData)}
         </div>
         
         ${comment.text ? `
