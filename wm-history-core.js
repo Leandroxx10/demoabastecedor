@@ -95,7 +95,7 @@
     const field = normalizeField(meta && meta.field);
     const origem = (meta && meta.origem) || 'sistema';
     const idSeed = `${sp.ano}${sp.mes}${sp.dia}_${sp.hora}${sp.minuto}${sp.segundo}_${String(eventTimeMs % 1000).padStart(3, '0')}_${safeKey(origem)}_${safeKey(field || 'snapshot')}`;
-    const ref = window.historicoRef.child(machineId).child(`rt_${idSeed}`);
+    const ref = window.historicoRef.child(machineId).push();
 
     let lastValues = null;
     try {
@@ -135,8 +135,10 @@
       clientSavedAt: new Date(eventTimeMs).toISOString()
     };
 
-    const tx = await ref.transaction(current => current || registro);
-    return tx.committed ? registro : null;
+    registro.idSeed = idSeed;
+    registro.firebaseKey = ref.key;
+    await ref.set(registro);
+    return registro;
   }
 
   async function saveSnapshotFromFirebase(machineId, meta) {

@@ -1,0 +1,26 @@
+AUDITORIA V2 - HISTÓRICO DO GRÁFICO ADMINISTRATIVO
+
+Correções adicionais aplicadas após validação visual:
+
+1. Leitura robusta do histórico
+- O painel agora varre /historico inteiro e aceita:
+  /historico/{maquina}/{registro}
+  /historico/{Máquina X}/{registro}
+  /historico/{fingerprint}
+  registros antigos com machineId, maquina, maquinaId, path ou targetPath.
+- Isso corrige registros que existem no Firebase, mas não apareciam por divergência de chave.
+
+2. Fallback imediato pelo estado atual da máquina
+- Se /maquinas/{id} foi atualizado, mas o evento de histórico ainda não chegou ao cliente,
+  o painel mostra o estado atual no gráfico para a data de hoje.
+- Esse fallback evita tela vazia logo após o lançamento.
+
+3. Filtro por horário baseado em timestamp
+- O filtro custom/turnos agora recalcula a hora usando o timestamp em America/Sao_Paulo.
+- Isso evita erro quando horaNum/minutoNum antigos estão ausentes ou incorretos.
+
+4. Cache busting
+- Scripts alterados receberam versionamento ?v=20260503b para reduzir risco de navegador usar JS antigo.
+
+5. Gravação do abastecedor
+- O núcleo de histórico passou a usar push() sempre, reduzindo risco de colisão de chave.

@@ -1,390 +1,269 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>WMoldes | Painel de Controle</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Abastecimento | WMoldes</title>
+    
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="tutorial.css">
-    <meta name="theme-color" content="#0ea5e9">
-    <link rel="manifest" href="manifest.webmanifest">
-</head>
-<body>
-    <div class="background-shapes">
-        <div class="shape shape-1"></div>
-        <div class="shape shape-2"></div>
-        <div class="shape shape-3"></div>
-    </div>
-
-    <div class="preloader" id="preloader">
-        <div class="preloader-spinner"></div>
-    </div>
-
-    <!-- Overlay do painel administrativo -->
-    <div class="painel-admin-overlay" id="adminOverlay"></div>
-
-    <!-- Painel administrativo secreto -->
-    <div class="painel-admin" id="painelAdmin">
-        <h2><i class="fas fa-user-shield"></i> Painel Administrativo</h2>
-        
-        <div class="config-group">
-            <h3><i class="fas fa-eye"></i> Visibilidade dos Itens</h3>
-            <div class="config-opcoes">
-                <label class="config-checkbox">
-                    <input type="checkbox" id="toggleReserva">
-                    <span>Mostrar Reservas</span>
-                </label>
-                <label class="config-checkbox">
-                    <input type="checkbox" id="toggleFunil">
-                    <span>Mostrar Funil</span>
-                </label>
-                <label class="config-checkbox">
-                    <input type="checkbox" id="toggleNeckring">
-                    <span>Mostrar Neck Ring</span>
-                </label>
-                <label class="config-checkbox">
-                    <input type="checkbox" id="toggleBlank">
-                    <span>Mostrar Blank</span>
-                </label>
-                <label class="config-checkbox">
-                    <input type="checkbox" id="toggleMolde">
-                    <span>Mostrar Molde</span>
-                </label>
-                <label class="config-checkbox">
-                    <input type="checkbox" id="togglePrefixo">
-                    <span>Mostrar Prefixos</span>
-                </label>
-            </div>
-        </div>
-        
-        <div class="config-group">
-            <h3><i class="fas fa-palette"></i> Tema de Cores</h3>
-            <div class="temas-container">
-                <div class="tema-option tema-ciano active" onclick="selecionarTema('ciano')">
-                    <i class="fas fa-check"></i>
-                </div>
-                <div class="tema-option tema-verde" onclick="selecionarTema('verde')">
-                    <i class="fas fa-check"></i>
-                </div>
-                <div class="tema-option tema-roxo" onclick="selecionarTema('roxo')">
-                    <i class="fas fa-check"></i>
-                </div>
-                <div class="tema-option tema-vermelho" onclick="selecionarTema('vermelho')">
-                    <i class="fas fa-check"></i>
-                </div>
-                <div class="tema-option tema-laranja" onclick="selecionarTema('laranja')">
-                    <i class="fas fa-check"></i>
-                </div>
-            </div>
-        </div>
-        
-        <div class="config-group">
-            <h3><i class="fas fa-cogs"></i> Configurações de Estoque</h3>
-            <p class="config-help-text">Defina o limite mínimo e escolha quais itens entram no filtro <strong>Ver Críticos</strong>.</p>
-            <div class="estoque-criticos-grid">
-                <div class="estoque-critico-card">
-                    <div class="estoque-critico-header">
-                        <span><i class="fas fa-cube"></i> Molde</span>
-                        <label class="switch-inline"><input type="checkbox" id="criticoMoldeAtivo"><span>Ver críticos</span></label>
-                    </div>
-                    <label class="estoque-input-group" for="estoqueMinimoMolde"><span>Limite mínimo</span><input type="number" id="estoqueMinimoMolde" class="estoque-input" min="0" max="999"><span>peças</span></label>
-                </div>
-                <div class="estoque-critico-card">
-                    <div class="estoque-critico-header">
-                        <span><i class="fas fa-cube"></i> Blank</span>
-                        <label class="switch-inline"><input type="checkbox" id="criticoBlankAtivo"><span>Ver críticos</span></label>
-                    </div>
-                    <label class="estoque-input-group" for="estoqueMinimoBlank"><span>Limite mínimo</span><input type="number" id="estoqueMinimoBlank" class="estoque-input" min="0" max="999"><span>peças</span></label>
-                </div>
-                <div class="estoque-critico-card">
-                    <div class="estoque-critico-header">
-                        <span><i class="fas fa-ring"></i> Neck Ring</span>
-                        <label class="switch-inline"><input type="checkbox" id="criticoNeckringAtivo"><span>Ver críticos</span></label>
-                    </div>
-                    <label class="estoque-input-group" for="estoqueMinimoNeckring"><span>Limite mínimo</span><input type="number" id="estoqueMinimoNeckring" class="estoque-input" min="0" max="999"><span>peças</span></label>
-                </div>
-                <div class="estoque-critico-card">
-                    <div class="estoque-critico-header">
-                        <span><i class="fas fa-filter"></i> Funil</span>
-                        <label class="switch-inline"><input type="checkbox" id="criticoFunilAtivo"><span>Ver críticos</span></label>
-                    </div>
-                    <label class="estoque-input-group" for="estoqueMinimoFunil"><span>Limite mínimo</span><input type="number" id="estoqueMinimoFunil" class="estoque-input" min="0" max="999"><span>peças</span></label>
-                </div>
-            </div>
-            <div class="config-opcoes estoque-alerta-global">
-                <label class="config-checkbox">
-                    <input type="checkbox" id="toggleAlertas">
-                    <span>Alertas visuais de estoque baixo</span>
-                </label>
-            </div>
-        </div>
-        
-        <div class="config-group">
-            <h3><i class="fas fa-sliders-h"></i> Outras Configurações</h3>
-            <div class="config-opcoes">
-                <label class="config-checkbox">
-                    <input type="checkbox" id="toggleAnimacoes">
-                    <span>Animações</span>
-                </label>
-                <label class="config-checkbox">
-                    <input type="checkbox" id="autoAtualizar">
-                    <span>Atualização Automática</span>
-                </label>
-                <label class="config-checkbox">
-                    <input type="checkbox" id="mostrarTotais">
-                    <span>Mostrar Totais</span>
-                </label>
-                <label class="config-checkbox">
-                    <input type="checkbox" id="mostrarGraficos">
-                    <span>Mostrar Gráficos</span>
-                </label>
-            </div>
-        </div>
-        
-        <div class="admin-botoes">
-            <button class="fechar" onclick="fecharPainelAdmin()">
-                <i class="fas fa-times"></i> Fechar
-            </button>
-            <button class="salvar" onclick="salvarConfiguracoes()">
-                <i class="fas fa-save"></i> Salvar Configurações
-            </button>
-        </div>
-    </div>
-
-    <!-- Tela de Login -->
-    <div class="login-container" id="loginScreen">
-        <div class="login-icon">
-            <i class="fas fa-industry"></i>
-        </div>
-        <h2 class="login-title">WMoldes | Painel de Controle</h2>
-        <p class="login-subtitle">Sistema de gerenciamento de produção</p>
-        
-        <form class="login-form" id="loginForm">
-            <div class="input-group">
-                <i class="fas fa-envelope"></i>
-                <input type="email" class="login-input" id="email" placeholder="Digite seu email" required>
-            </div>
-            <div class="input-group">
-                <i class="fas fa-key"></i>
-                <input type="password" class="login-input" id="password" placeholder="Digite sua senha" required>
-            </div>
-            <div class="error-message" id="errorMessage">
-                <i class="fas fa-exclamation-circle"></i> Credenciais incorretas. Tente novamente.
-            </div>
-            <button type="submit" class="login-btn">
-                <i class="fas fa-lock-open"></i> Acessar Sistema
-            </button>
-        </form>
-    </div>
-
-    <!-- Conteúdo Principal (inicialmente oculto) -->
-    <div class="container main-content" id="mainContent">
-        <!-- 
-        ====================================================
-        CABEÇALHO
-        ====================================================
-        -->
-        <header>
-            <h1 id="tituloPrincipal"><i class="fas fa-industry"></i> Painel de Controle de Produção</h1>
-            <p style="text-align: center; color: #94a3b8; margin-bottom: 30px; max-width: 800px; margin-left: auto; margin-right: auto;">
-                Monitoramento em tempo real da produção de moldes, blanks, neck rings e funis
-            </p>
-        </header>
-
-        <!-- 
-        ====================================================
-        BARRA DE CONTROLE SUPERIOR
-        ====================================================
-        -->
-        <div class="top-bar">
-            <div class="search-container">
-                <i class="fas fa-search"></i>
-                <input id="filtro" oninput="filtrar()" placeholder="Filtrar máquina (ex: A1)" type="text"/>
-            </div>
-            
-            <div class="button-group">
-                <button id="btnCriticos" onclick="alternarCriticos()">
-                    <i class="fas fa-exclamation-triangle"></i> Ver Críticos
-                </button>
-                
-                <button class="primary" onclick="recarregarDados()">
-                    <i class="fas fa-sync-alt"></i> Atualizar
-                </button>
-                
-                <button class="dark-mode-toggle" onclick="alternarModoEscuro()">
-                    <i class="fas fa-moon"></i> Modo Escuro
-                </button>
-                
-                <button class="pdf" onclick="gerarPDF()">
-                    <i class="fas fa-file-pdf"></i> Gerar Relatório
-                </button>
-
-                <button class="tutorial-btn" onclick="window.location.href='tutorial.html'">
-                    <i class="fas fa-graduation-cap"></i> Tutorial
-                </button>
-                
-                <button class="logout" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i> Sair
-                </button>
-            </div>
-        </div>
-
-        <!-- 
-        ====================================================
-        FILTROS POR FORNO
-        ====================================================
-        -->
-        <div class="filtro-fornos">
-            <button id="btnTodos" class="active" onclick="filtrarPorForno('todos')">
-                <i class="fas fa-layer-group"></i> Todos os Fornos
-            </button>
-            <button id="btnFornoA" onclick="filtrarPorForno('A')">
-                <i class="fas fa-fire"></i> Forno A (A1-A6)
-            </button>
-            <button id="btnFornoB" onclick="filtrarPorForno('B')">
-                <i class="fas fa-fire"></i> Forno B (B1-B8)
-            </button>
-            <button id="btnFornoC" onclick="filtrarPorForno('C')">
-                <i class="fas fa-fire"></i> Forno C (C1-C8)
-            </button>
-            <button id="btnFornoD" onclick="filtrarPorForno('D')">
-                <i class="fas fa-fire"></i> Forno D (D10-D15)
-            </button>
-        </div>
-
-        <!-- 
-        ====================================================
-        RESUMO DE TOTAIS
-        ====================================================
-        -->
-        <div id="totais">
-            <div class="total-item">
-                <div class="total-title"><i class="fas fa-box"></i> Total Moldes</div>
-                <div id="total-molde" class="total-valor">0</div>
-                <div class="total-sub">em todas as máquinas</div>
-            </div>
-            
-            <div class="total-item">
-                <div class="total-title"><i class="fas fa-box"></i> Total Blanks</div>
-                <div id="total-blank" class="total-valor">0</div>
-                <div class="total-sub">em todas as máquinas</div>
-            </div>
-            
-            <div class="total-item">
-                <div class="total-title"><i class="fas fa-ring"></i> Total Neck Rings</div>
-                <div id="total-neckring" class="total-valor">0</div>
-                <div class="total-sub">em todas as máquinas</div>
-            </div>
-            
-            <div class="total-item">
-                <div class="total-title"><i class="fas fa-filter"></i> Total Funis</div>
-                <div id="total-funil" class="total-valor">0</div>
-                <div class="total-sub">em todas as máquinas</div>
-            </div>
-            
-            <div class="total-item">
-                <div class="total-title"><i class="fas fa-exclamation-circle"></i> Máquinas Críticas</div>
-                <div id="total-criticos" class="total-valor">0</div>
-                <div class="total-sub">estoque ≤ <span id="estoqueMinimoLabel">3</span> peças</div>
-            </div>
-        </div>
-
-        <!-- 
-        ====================================================
-        SISTEMA DE ABAS
-        ====================================================
-        -->
-        <div class="tabs-container">
-            <div class="tabs-header">
-                <button class="tab-btn" onclick="openTab('dashboard')">
-                    <i class="fas fa-chart-line"></i> Dashboard
-                </button>
-                <button class="tab-btn active" onclick="openTab('controle')">
-                    <i class="fas fa-cogs"></i> Controle de Produção
-                </button>
-
-                <button
-                    id="btnModoCompacto"
-                    class="tab-action-btn compact-mode-toggle"
-                    type="button"
-                    onclick="alternarModoCompacto()"
-                    aria-pressed="false"
-                    title="Alternar visualização compacta dos cartões">
-                    <i class="fas fa-compress-alt"></i> Modo Compacto
-                </button>
-            </div>
-            
-            <div id="dashboard" class="tab-content">
-                <!-- 
-                ====================================================
-                GRÁFICOS
-                ====================================================
-                -->
-                <div class="dashboard-visual-options" aria-label="Opções de visualização dos gráficos">
-                    <span class="dashboard-visual-title"><i class="fas fa-eye"></i> Exibir nos gráficos:</span>
-                    <label class="dashboard-toggle">
-                        <input type="checkbox" id="toggleGraficoNeckRing" onchange="atualizarVisualizacaoDashboard()">
-                        <span>Neck Ring</span>
-                    </label>
-                    <label class="dashboard-toggle">
-                        <input type="checkbox" id="toggleGraficoFunil" onchange="atualizarVisualizacaoDashboard()">
-                        <span>Funil</span>
-                    </label>
-                </div>
-
-                <section class="graficos-container">
-                    <!-- Gráfico de produção atual -->
-                    <div class="grafico-card">
-                        <h2><i class="fas fa-chart-bar"></i> Estoque Atual por Máquina</h2>
-                        <div class="grafico-scroll">
-                            <div class="grafico-canvas-wide">
-                                <canvas id="graficoProducao"></canvas>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Gráfico de estoque total (máquina + reserva) -->
-                    <div class="grafico-card">
-                        <h2><i class="fas fa-chart-line"></i> Estoque Total (Máquina + Reserva)</h2>
-                        <div class="grafico-scroll">
-                            <div class="grafico-canvas-wide">
-                                <canvas id="graficoTotal"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </div>
-            
-            <div id="controle" class="tab-content active">
-                <!-- 
-                ====================================================
-                PAINEL DE MÁQUINAS
-                ====================================================
-                -->
-                <h2><i class="fas fa-cogs"></i> Controle por Máquina</h2>
-                <div id="painel" class="maquinas-grid"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 
-    ====================================================
-    SCRIPTS
-    ====================================================
-    -->
+    
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     
+    <!-- Chart.js para medidores circulares -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Nossos arquivos -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="admin-style.css">
+
+</head>
+<body>
+    <!-- Container principal -->
+    <div class="container">
+        <!-- Cabeçalho -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <img src="https://raw.githubusercontent.com/Leandroxx10/painel-producao/refs/heads/main/file_00000000e9ec62309b1974049c0cf713.png" 
+                         alt="WMoldes Logo" style="width: 40px; height: 40px; border-radius: 8px;">
+                </div>
+                <div class="logo-text">
+                    <h1>Dashboard Cartões Produção</h1>
+                    <p>WMoldes - Visualização por máquina</p>
+                </div>
+            </div>
+            
+            <!-- Status da conexão -->
+            <div class="connection-status" id="connectionStatus">
+                <i class="fas fa-circle"></i>
+                <span>Conectando ao Firebase...</span>
+            </div>
+            
+            <!-- Controles -->
+            <div class="header-controls">
+                <button class="btn" id="fullscreenCarouselBtn" type="button" aria-pressed="false">
+                    <i class="fas fa-expand"></i> Tela Cheia
+                </button>
+                <label class="speed-control" id="fullscreenSpeedControl" title="Velocidade do carrossel em tela cheia">
+                    <span>Velocidade</span>
+                    <input type="range" id="fullscreenSpeedRange" min="2" max="15" step="1" value="6">
+                    <strong id="fullscreenSpeedValue">6s</strong>
+                </label>
+                <button class="btn" id="refreshBtn">
+                    <i class="fas fa-sync-alt"></i> Atualizar
+                </button>
+                <button class="btn" id="filtersBtn" type="button" >
+                    <i class="fas fa-filter"></i> Filtros
+                </button>
+                <button class="btn" id="compactModeBtn" aria-pressed="false">
+                    <i class="fas fa-compress-alt"></i> Modo Compacto
+                </button>
+                <button class="btn" onclick="window.open('https://projetoabastecedor1.netlify.app/', '_blank')">
+                    <i class="fas fa-external-link-alt"></i> Lançamento
+                </button>
+                <button class="btn" id="adminBtn">
+                    <i class="fas fa-cog"></i> Painel Admin
+                </button>
+            </div>
+        </header>
+        
+        <!-- Barra de filtros (inicialmente escondida) -->
+        <div class="filters-bar" id="filtersBar">
+            <div class="filter-group">
+                <h3><i class="fas fa-filter"></i> Filtros</h3>
+                
+                <!-- Filtro por forno -->
+                <div class="filter-section">
+                    <label><i class="fas fa-fire"></i> Forno:</label>
+                    <div class="filter-buttons">
+                        <button class="filter-btn" type="button" data-forno="A">Forno A</button>
+                        <button class="filter-btn" type="button" data-forno="B">Forno B</button>
+                        <button class="filter-btn" type="button" data-forno="C">Forno C</button>
+                        <button class="filter-btn" type="button" data-forno="D">Forno D</button>
+                        <button class="filter-btn" type="button" id="clearFornoBtn">Limpar</button>
+                    </div>
+                </div>
+                
+                <!-- Filtro por status -->
+                <div class="filter-section">
+                    <label><i class="fas fa-exclamation-triangle"></i> Status:</label>
+                    <div class="filter-buttons">
+                        <button class="filter-btn" type="button" data-status="critico">Baixa Reserva</button>
+                        <button class="filter-btn" type="button" data-status="baixo">Baixo Estoque</button>
+                        <button class="filter-btn" type="button" data-status="normal">Bem Abastecido</button>
+                        <button class="filter-btn" type="button" id="clearStatusBtn">Todos</button>
+                    </div>
+                </div>
+                
+                <!-- Filtro por manutenção -->
+                <div class="filter-section">
+                    <label><i class="fas fa-tools"></i> Manutenção:</label>
+                    <div class="filter-buttons">
+                        <button class="filter-btn" id="hideMaintenanceBtn" type="button" aria-pressed="false">Ocultar paradas para manutenção</button>
+                    </div>
+                </div>
+                
+                <!-- Busca -->
+                <div class="filter-section">
+                    <label><i class="fas fa-search"></i> Buscar Máquina:</label>
+                    <input type="text" id="machineSearch" class="search-input" placeholder="Digite o número da máquina...">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Estatísticas gerais -->
+        <div class="stats-summary">
+            <div class="stat-card summary">
+                <div class="stat-icon">
+                    <i class="fas fa-industry"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Total de Máquinas</div>
+                    <div class="stat-value" id="totalMachines">0</div>
+                </div>
+            </div>
+            
+            <div class="stat-card maintenance">
+                <div class="stat-icon">
+                    <i class="fas fa-tools"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Em Manutenção</div>
+                    <div class="stat-value" id="maintenanceMachines">0</div>
+                </div>
+            </div>
+            
+            <div class="stat-card critical">
+                <div class="stat-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Baixa Reserva</div>
+                    <div class="stat-value" id="criticalMachines">0</div>
+                </div>
+            </div>
+            
+            <div class="stat-card warning">
+                <div class="stat-icon">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Baixo Estoque</div>
+                    <div class="stat-value" id="lowStockMachines">0</div>
+                </div>
+            </div>
+            
+            <div class="stat-card ok">
+                <div class="stat-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Bem Abastecido</div>
+                    <div class="stat-value" id="normalMachines">0</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Área das seções por forno -->
+        <div class="forno-sections" id="fornoSections">
+            <!-- As seções por forno serão geradas dinamicamente aqui -->
+            <div class="loading-message">
+                <div class="spinner"></div>
+                <p>Organizando máquinas por forno...</p>
+            </div>
+        </div>
+        
+        <!-- Área dos cartões (modo tradicional - escondida por padrão) -->
+        <div class="cards-container" id="cardsContainer" style="display: none;">
+            <!-- Os cartões serão gerados dinamicamente aqui -->
+            <div class="loading-message">
+                <div class="spinner"></div>
+                <p>Carregando dados das máquinas...</p>
+            </div>
+        </div>
+        
+        <!-- Rodapé -->
+        <footer class="footer">
+            <p>WMoldes Dashboard Cartões &copy; 2026 | Dados em tempo real</p>
+            <p class="last-update">Última atualização: <span id="lastUpdateTime">--:--:--</span></p>
+        </footer>
+    </div>
+    
+    <!-- Modal para informações detalhadas da máquina -->
+    <div class="machine-modal" id="machineModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-info-circle"></i> Detalhes da Máquina</h2>
+                <button class="close-modal" id="closeModalBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Conteúdo será preenchido dinamicamente -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
     <script src="firebase-config.js"></script>
-    <script src="wm-history-core.js?v=20260502"></script>
+    <script src="wm-history-core.js?v=20260503b"></script>
     <script src="auth.js"></script>
-    <script src="script.js"></script>
-    <script src="pwa-register.js"></script>
+    <script src="cards.js"></script>
+    <script src="image-zoom.js"></script>
+    <script src="script.js?v=20260503b"></script>
+    <script src="realtime-firebase-sync.js?v=21"></script>
+    
+    <script>
+        // Configurar eventos dos botões
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log("🚀 Configurando eventos dos filtros...");
+            
+            // Botão de fechar modal
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            if (closeModalBtn) {
+                closeModalBtn.addEventListener('click', function() {
+                    const modal = document.getElementById('machineModal');
+                    if (modal) modal.classList.remove('active');
+                });
+            }
+            
+            // Configurar botão admin
+            const adminBtn = document.getElementById('adminBtn');
+            if (adminBtn) {
+                adminBtn.addEventListener('click', handleAdminClick);
+            }
+            
+            // Configurar botão de atualizar
+            const refreshBtn = document.getElementById('refreshBtn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', refreshData);
+            }
+            
+            // Verificar autenticação
+            const user = await checkAuth();
+            
+            // Inicializar dashboard de cartões
+            initCardsDashboard();
+            
+            console.log("✅ Dashboard inicializado com sucesso");
+        });
+        
+        // Função para lidar com clique no botão admin
+        async function handleAdminClick() {
+            const user = await checkAuth();
+            if (user) {
+                window.location.href = 'admin.html';
+            } else {
+                window.location.href = 'login.html';
+            }
+        }
+    </script>
+    <script src="wm-hard-controls.js?v=20260426"></script>
+    <script src="wm-fullscreen-carousel.js?v=20260429"></script>
 </body>
 </html>

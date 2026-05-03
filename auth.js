@@ -1,119 +1,87 @@
+// ================= SISTEMA DE AUTENTICAÇÃO =================
 
-// ================= SISTEMA DE AUTENTICAÇÃO FIREBASE =================
+// LISTA DE EMAILS AUTORIZADOS (ADICIONE AQUI OS EMAILS DOS USUÁRIOS)
+const AUTHORIZED_USERS = [
+    'leandrodevxx@gmail.com',
+    'carregador9@wmoldes.com',
+    'bruno.teodoro@wheaton.com.br',
+    'bruno@wmoldes.com',
+    'supervisor@wmoldes.com',
+    'operador@wmoldes.com'
+    // Adicione mais emails conforme necessário
+];
 
+// Verificar se a variável auth existe (vem do firebase-config.js)
+if (typeof auth === 'undefined') {
+    console.error("❌ auth não está definida. Verifique se firebase-config.js foi carregado.");
+}
+
+// Verificar se usuário está autenticado
 function checkAuth() {
     return new Promise((resolve, reject) => {
         if (!auth) {
+            console.error("❌ Firebase Auth não está inicializada");
             reject(new Error("Firebase Auth não está inicializada"));
             return;
         }
-
-        const unsubscribe = auth.onAuthStateChanged((user) => {
-            unsubscribe();
-            resolve(user || null);
+        
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                console.log("✅ Usuário autenticado:", user.email);
+                resolve(user);
+            } else {
+                console.log("❌ Nenhum usuário autenticado");
+                resolve(null);
+            }
         }, (error) => {
-            unsubscribe();
+            console.error("❌ Erro na verificação de autenticação:", error);
             reject(error);
         });
     });
 }
 
-async function getCurrentUserData(user = auth.currentUser) {
-    if (!user) return null;
-
-    try {
-        const snapshot = await db.ref(`users/${user.uid}`).once('value');
-        const userData = snapshot.val();
-
-        if (!userData) return null;
-
-        return {
-            uid: user.uid,
-            email: user.email,
-            ...userData,
-            role: normalizeRole(userData.role),
-            isActive: userData.isActive !== false
-        };
-    } catch (error) {
-        console.error("❌ Erro ao carregar dados do usuário:", error);
-        return null;
-    }
-}
-
+// Função para fazer login
 async function login(email, password) {
     try {
-        const normalizedEmail = String(email || '').trim().toLowerCase();
-        const userCredential = await auth.signInWithEmailAndPassword(normalizedEmail, password);
-        const userData = await getCurrentUserData(userCredential.user);
-
-        if (!userData || userData.isActive === false) {
-            await auth.signOut();
-            return {
-                success: false,
-                error: "Usuário sem permissão de acesso. Verifique o cadastro no painel administrativo."
+        console.log("🔐 Tentando login para:", email);
+        
+        // Verificar se o email está na lista autorizada ANTES de tentar login
+        if (!AUTHORIZED_USERS.includes(email.toLowerCase())) {
+            console.error("❌ Email não autorizado:", email);
+            return { 
+                success: false, 
+                error: "Acesso negado. Este email não está autorizado para acessar o sistema." 
             };
         }
-
-        await db.ref(`users/${userCredential.user.uid}`).update({
-            email: normalizedEmail,
-            lastLogin: Date.now()
-        });
-
-        localStorage.setItem('userEmail', normalizedEmail);
-        localStorage.setItem('userUID', userCredential.user.uid);
-
-        await writeAuditLog({
-            action: 'login no sistema',
-            details: 'Usuário autenticado com sucesso.',
-            entityType: 'auth',
-            entityId: userCredential.user.uid,
-            targetPath: `users/${userCredential.user.uid}`,
-            before: null,
-            after: { lastLogin: Date.now() }
-        });
-
-        return { success: true, user: userCredential.user, userData };
+        
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        console.log("✅ Login bem-sucedido:", userCredential.user.email);
+        return { success: true, user: userCredential.user };
     } catch (error) {
         console.error("❌ Erro no login:", error);
-
-        let errorMessage = "Erro ao fazer login. Verifique suas credenciais.";
-        switch (error.code) {
-            case 'auth/user-not-found':
-                errorMessage = "Usuário não encontrado.";
-                break;
-            case 'auth/wrong-password':
-                errorMessage = "Senha incorreta.";
-                break;
-            case 'auth/invalid-email':
-                errorMessage = "Email inválido.";
-                break;
-            case 'auth/user-disabled':
-                errorMessage = "Esta conta foi desativada.";
-                break;
-            case 'auth/too-many-requests':
-                errorMessage = "Muitas tentativas. Tente novamente mais tarde.";
-                break;
+        
+        // Mensagens de erro mais amigáveis
+        let errorMessage = error.message;
+        if (error.code === 'auth/user-not-found') {
+            errorMessage = "Usuário não encontrado. Verifique o email.";
+        } else if (error.code === 'auth/wrong-password') {
+            errorMessage = "Senha incorreta. Tente novamente.";
+        } else if (error.code === 'auth/invalid-email') {
+            errorMessage = "Email inválido.";
+        } else if (error.code === 'auth/too-many-requests') {
+            errorMessage = "Muitas tentativas. Tente novamente mais tarde.";
         }
-
+        
         return { success: false, error: errorMessage };
     }
 }
 
+// Função para fazer logout
 async function logout() {
     try {
-        const actor = getAuditUser();
-        await writeAuditLog({
-            action: 'logout do sistema',
-            details: 'Usuário encerrou a sessão.',
-            entityType: 'auth',
-            entityId: actor.uid,
-            targetPath: `users/${actor.uid || 'desconhecido'}`
-        });
-
+        console.log("🚪 Fazendo logout...");
         await auth.signOut();
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userUID');
-
+        console.log("✅ Logout bem-sucedido");
         return true;
     } catch (error) {
         console.error("❌ Erro no logout:", error);
@@ -121,48 +89,148 @@ async function logout() {
     }
 }
 
-async function isAdmin(user) {
-    const userData = await getCurrentUserData(user);
-    return !!userData && userData.isActive && userData.role === 'admin';
+// Função para verificar se é admin/autorizado
+function isAuthorized(user) {
+    if (!user || !user.email) {
+        return false;
+    }
+    
+    // Verificar se o email está na lista de autorizados
+    const isAuthorized = AUTHORIZED_USERS.includes(user.email.toLowerCase());
+    console.log(`🔐 Verificação de autorização para ${user.email}: ${isAuthorized ? 'AUTORIZADO' : 'NÃO AUTORIZADO'}`);
+    return isAuthorized;
 }
 
+// Proteger página admin - VERIFICA SE O USUÁRIO ESTÁ NA LISTA AUTORIZADA
 async function protectAdminPage() {
     try {
         const user = await checkAuth();
-
+        
         if (!user) {
-            if (typeof mostrarNotificacao === 'function') {
-                mostrarNotificacao("Por favor, faça login para acessar esta página", "error");
-            }
-            setTimeout(() => {
-                window.location.href = 'login.html';
-            }, 1000);
-            return null;
-        }
-
-        if (!(await isAdmin(user))) {
-            if (typeof mostrarNotificacao === 'function') {
-                mostrarNotificacao("Acesso negado. Apenas administradores podem acessar esta página.", "error");
-            }
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1200);
-            return null;
-        }
-
-        return user;
-    } catch (error) {
-        console.error("❌ Erro na verificação de acesso administrativo:", error);
-        setTimeout(() => {
+            console.log("🔒 Usuário não autenticado, redirecionando para login");
             window.location.href = 'login.html';
-        }, 1000);
+            return null;
+        }
+        
+        // Verificar se o usuário está na lista de autorizados
+        if (!isAuthorized(user)) {
+            console.log("⛔ Usuário não autorizado:", user.email);
+            
+            // Fazer logout do usuário não autorizado
+            await auth.signOut();
+            
+            alert("Acesso negado. Você não está autorizado para acessar esta área.");
+            window.location.href = 'index.html';
+            return null;
+        }
+        
+        console.log("✅ Usuário autenticado e autorizado:", user.email);
+        return user;
+        
+    } catch (error) {
+        console.error("❌ Erro na verificação de autenticação:", error);
+        window.location.href = 'login.html';
         return null;
     }
 }
 
+// Mostrar/ocultar elementos baseado na autenticação
+function updateUIForAuth(user) {
+    const adminLink = document.querySelector('[onclick*="admin.html"]');
+    if (adminLink) {
+        if (user) {
+            // Verificar se o usuário é autorizado antes de mostrar o link
+            if (isAuthorized(user)) {
+                adminLink.innerHTML = '<i class="fas fa-cog"></i> Painel Admin';
+                adminLink.style.display = 'flex';
+            } else {
+                adminLink.style.display = 'none';
+            }
+        } else {
+            adminLink.innerHTML = '<i class="fas fa-lock"></i> Login Admin';
+            adminLink.style.display = 'flex';
+        }
+    }
+}
+
+// Função para adicionar novo usuário autorizado (pode ser usada pelo administrador)
+function addAuthorizedUser(email) {
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    if (!AUTHORIZED_USERS.includes(normalizedEmail)) {
+        AUTHORIZED_USERS.push(normalizedEmail);
+        console.log(`✅ Email adicionado à lista de autorizados: ${normalizedEmail}`);
+        return true;
+    }
+    
+    console.log(`⚠️ Email já está na lista de autorizados: ${normalizedEmail}`);
+    return false;
+}
+
+// Função para remover usuário autorizado
+function removeAuthorizedUser(email) {
+    const normalizedEmail = email.toLowerCase().trim();
+    const index = AUTHORIZED_USERS.indexOf(normalizedEmail);
+    
+    if (index !== -1) {
+        AUTHORIZED_USERS.splice(index, 1);
+        console.log(`✅ Email removido da lista de autorizados: ${normalizedEmail}`);
+        return true;
+    }
+    
+    console.log(`⚠️ Email não encontrado na lista de autorizados: ${normalizedEmail}`);
+    return false;
+}
+
+// Função para obter lista de usuários autorizados (apenas para admin)
+function getAuthorizedUsers() {
+    return [...AUTHORIZED_USERS]; // Retorna cópia da lista
+}
+
+// Inicializar autenticação quando o DOM carregar
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("🔐 Lista de usuários autorizados:", AUTHORIZED_USERS);
+    
+    // Verificar se estamos na página admin
+    if (window.location.pathname.includes('admin.html')) {
+        console.log("🔐 Página admin detectada, verificando autenticação e autorização...");
+        
+        // Verificar autenticação e autorização
+        checkAuth().then(user => {
+            if (!user) {
+                console.log("🔒 Usuário não autenticado, redirecionando para login");
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // Verificar se está autorizado
+            if (!isAuthorized(user)) {
+                console.log("⛔ Usuário não autorizado, redirecionando para dashboard");
+                
+                // Fazer logout do usuário não autorizado
+                auth.signOut().then(() => {
+                    alert("Acesso negado. Você não está autorizado para acessar o painel administrativo.");
+                    window.location.href = 'index.html';
+                });
+            } else {
+                console.log("✅ Usuário autorizado, pode acessar o painel admin");
+            }
+        }).catch(error => {
+            console.error("❌ Erro na verificação de autenticação:", error);
+        });
+    }
+});
+
+// Exportar para uso global
 window.checkAuth = checkAuth;
 window.login = login;
 window.logout = logout;
-window.isAdmin = isAdmin;
 window.protectAdminPage = protectAdminPage;
-window.getCurrentUserData = getCurrentUserData;
+window.updateUIForAuth = updateUIForAuth;
+window.isAuthorized = isAuthorized;
+window.addAuthorizedUser = addAuthorizedUser;
+window.removeAuthorizedUser = removeAuthorizedUser;
+window.getAuthorizedUsers = getAuthorizedUsers;
+window.AUTHORIZED_USERS = AUTHORIZED_USERS; // Exportar para admin.js usar
+
+console.log("✅ Sistema de autenticação carregado com lista de usuários autorizados");

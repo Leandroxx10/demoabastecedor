@@ -73,7 +73,7 @@
 
   function timestampFromRecordDateTime(record) {
     if (!record) return 0;
-    const timestamp = Number(record.timestamp || 0);
+    const timestamp = Number(record.timestamp || record.serverTimestamp || record.createdAt || 0);
     if (timestamp > 0) return timestamp;
     let y, m, d;
     if (record.dataISO && /^\d{4}-\d{2}-\d{2}$/.test(String(record.dataISO))) [y, m, d] = String(record.dataISO).split('-').map(Number);
@@ -217,6 +217,71 @@
     });
   }
 
+
+  function machineAliases(machine) {
+    const raw = String(machine || '').trim();
+    const stripped = raw.replace(/^Máquina\s+/i, '').trim();
+    const digits = (stripped.match(/\d+/) || [''])[0];
+    const aliases = new Set([raw, stripped]);
+    if (digits) {
+      aliases.add(digits);
+      aliases.add(String(Number(digits)));
+      aliases.add(`Máquina ${Number(digits)}`);
+      aliases.add(`Maquina ${Number(digits)}`);
+      aliases.add(`machine_${Number(digits)}`);
+      aliases.add(`maquina_${Number(digits)}`);
+    }
+    return aliases;
+  }
+
+  function recordMatchesMachine(record, key, parentKey, aliases) {
+    const fields = [
+      record?.machineId, record?.machine, record?.maquina, record?.maquinaId,
+      record?.idMaquina, record?.machine_id, parentKey
+    ].filter(v => v !== undefined && v !== null).map(v => String(v).trim());
+    if (fields.some(v => aliases.has(v) || aliases.has(v.replace(/^Máquina\s+/i, '').trim()))) return true;
+    const hay = String(record?.path || record?.targetPath || record?.ref || '');
+    for (const a of aliases) {
+      if (a && (hay.includes(`maquinas/${a}/`) || hay.includes(`historico/${a}/`) || hay.includes(`/${a}/`))) return true;
+    }
+    const digitsAlias = [...aliases].find(a => /^\d+$/.test(a));
+    if (digitsAlias) {
+      const re = new RegExp(`(?:maquinas|historico)/(?:Máquina\\s*)?${digitsAlias}(?:/|$)`, 'i');
+      if (re.test(hay)) return true;
+    }
+    return false;
+  }
+
+  function collectHistoryRows(rootRows, machine) {
+    const aliases = machineAliases(machine);
+    const out = {};
+    const add = (id, value, parentKey='') => {
+      if (!value || typeof value !== 'object') return;
+      const maybeRecord = value.timestamp || value.createdAt || value.serverTimestamp || value.hora || value.data || value.dataISO || value.tipo;
+      if (maybeRecord && recordMatchesMachine(value, id, parentKey, aliases)) {
+        out[id] = value;
+      }
+    };
+
+    // Caminho correto: /historico/{maquina}/{pushId}
+    for (const alias of aliases) {
+      const branch = rootRows?.[alias];
+      if (branch && typeof branch === 'object') {
+        Object.keys(branch).forEach(k => add(`${alias}_${k}`, branch[k], alias));
+      }
+    }
+
+    // Compatibilidade ampla: /historico/{fingerprint} e /historico/{qualquer-maquina}/{pushId}
+    Object.keys(rootRows || {}).forEach(parentKey => {
+      const value = rootRows[parentKey];
+      add(`root_${parentKey}`, value, parentKey);
+      if (value && typeof value === 'object') {
+        Object.keys(value).forEach(childKey => add(`${parentKey}_${childKey}`, value[childKey], parentKey));
+      }
+    });
+    return out;
+  }
+
   async function getHistoryFromFirebase(machine, dateBR, period) {
     if (!machine) return [];
 
@@ -238,15 +303,17 @@
       acceptedISO.add(getDateISOFromBR(next));
     }
 
-    const snapshot = await historicoRef.child(machine).once('value');
-    const rows = snapshot.val() || {};
     const result = [];
+    const rootSnapshot = await historicoRef.once('value');
+    const rootRows = rootSnapshot.val() || {};
+    const rows = collectHistoryRows(rootRows, machine);
 
     Object.keys(rows).forEach(key => {
       const raw = rows[key] || {};
       const normalized = normalizeRecord(key, raw);
-      // Somente dados reais: ignora snapshots horários, snapshot atual e registros artificiais.
-      if (normalized.tipo !== 'real_time') return;
+
+      // Aceita real_time e também registros antigos sem tipo, desde que tenham data/hora/timestamp.
+      if (normalized.tipo && !['real_time', 'manual', 'painel_admin', 'abastecedor', 'digitacao_manual'].includes(String(normalized.tipo))) return;
 
       if (period === '24h') {
         const { startMs, endMs } = getRolling24hWindow();
@@ -260,11 +327,23 @@
       }
     });
 
-    // V4: gráfico 100% baseado em registros salvos no Firebase (/historico).
-    // Não adiciona ponto com Date.now() nem estado atual de /maquinas, porque isso
-    // fazia o último horário se mover a cada minuto sem novo lançamento real.
+    // Fallback de segurança: se o lançamento atual atualizou /maquinas mas o histórico ainda não chegou
+    // ao cliente, mostra o estado atual no gráfico para a data de hoje. O ponto fica marcado como fallback.
+    const live = await buildLiveSnapshot(String(machine).replace(/^Máquina\s+/i, '').trim(), dateBR);
+    if (live) {
+      const latest = sortRecords(result, period).slice(-1)[0];
+      const sameValues = latest && latest.molde === live.molde && latest.blank === live.blank && latest.neck_ring === live.neck_ring && latest.funil === live.funil;
+      const liveTs = timestampFromRecordDateTime(live);
+      if (!latest || !sameValues || Math.abs((latest.timestamp || 0) - liveTs) > 5 * 60 * 1000) {
+        live.tipo = 'real_time';
+        live.source = 'fallback_maquinas_current_state';
+        result.push(live);
+      }
+    }
 
-    return sortRecords(result, period);
+    const sorted = sortRecords(result, period);
+    console.info('[Histórico] leitura', { machine, dateBR, period, registros: sorted.length, chavesEncontradas: Object.keys(rows).length });
+    return sorted;
   }
 
   function filterByPeriod(rows, period) {
@@ -287,9 +366,11 @@
     const nextISO = getDateISOFromBR(nextBR);
 
     return rows.filter(r => {
-      const minutes = (r.horaNum || 0) * 60 + (r.minutoNum || 0);
-      const isCurrent = r.data === currentBR || r.dataISO === currentISO || timestampMatchesDate(r.timestamp, currentBR, currentISO);
-      const isNext = r.data === nextBR || r.dataISO === nextISO;
+      const ts = timestampFromRecordDateTime(r);
+      const sp = ts ? getSPParts(ts) : null;
+      const minutes = sp ? (sp.hourNum * 60 + sp.minuteNum) : ((r.horaNum || 0) * 60 + (r.minutoNum || 0));
+      const isCurrent = (sp && (sp.br === currentBR || sp.iso === currentISO)) || r.data === currentBR || r.dataISO === currentISO || timestampMatchesDate(r.timestamp, currentBR, currentISO);
+      const isNext = (sp && (sp.br === nextBR || sp.iso === nextISO)) || r.data === nextBR || r.dataISO === nextISO;
 
       if (start <= end) return isCurrent && minutes >= start && minutes <= end;
 

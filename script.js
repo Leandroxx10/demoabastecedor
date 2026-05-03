@@ -23,27 +23,19 @@ let config = {
     mostrarTotais: true,
     mostrarGraficos: true,
     tema: 'ciano',
-    estoqueMinimo: 3,
-    estoqueMinimoMolde: 3,
-    estoqueMinimoBlank: 3,
-    estoqueMinimoNeckring: 3,
-    estoqueMinimoFunil: 3,
-    criticoMoldeAtivo: true,
-    criticoBlankAtivo: true,
-    criticoNeckringAtivo: true,
-    criticoFunilAtivo: true
+    estoqueMinimo: 3
 };
 
 // Configuração de filtro por forno
-let fornosAtivos = new Set();
-let modoCompactoAtivo = localStorage.getItem('modoCompacto') === 'true';
-let mostrarNeckRingDashboard = localStorage.getItem('mostrarNeckRingDashboard') === 'true';
-let mostrarFunilDashboard = localStorage.getItem('mostrarFunilDashboard') === 'true';
+let fornoAtivo = 'todos';
 let clicksTitulo = 0;
 let timeoutClicks = null;
 
 // Controle para mostrar apenas máquinas críticas
 let mostrarCriticos = false;
+
+// Evita gravações duplicadas quando o usuário clica rapidamente ou o navegador dispara o mesmo evento novamente.
+const pendingMachineWrites = new Set();
 
 // Estado do modo escuro
 let modoEscuroAtivo = localStorage.getItem('modoEscuro') === 'true';
@@ -74,8 +66,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.body.classList.add('dark-mode');
         document.querySelector('.dark-mode-toggle').innerHTML = '<i class="fas fa-sun"></i> Modo Claro';
     }
-
-    aplicarEstadoModoCompacto(false);
     
     // Ocultar preloader após 1.5 segundos
     setTimeout(() => {
@@ -101,6 +91,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Inicializar listeners do Firebase
         inicializarFirebaseListeners();
+
+        // Carregar dados imediatamente, sem depender do clique em Atualizar
+        inicializarCarregamentoAutomaticoMaquinas();
         
         // Inicializar gráficos
         inicializarGraficos();
@@ -118,67 +111,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         configurarLogin();
     }
 });
-
-function normalizarConfiguracoes(configSalva = {}) {
-    const base = { ...config, ...configSalva };
-    const legado = Number.parseInt(base.estoqueMinimo, 10);
-    const limitePadrao = Number.isFinite(legado) ? legado : 3;
-    base.estoqueMinimoMolde = Number.parseInt(base.estoqueMinimoMolde, 10);
-    base.estoqueMinimoBlank = Number.parseInt(base.estoqueMinimoBlank, 10);
-    base.estoqueMinimoNeckring = Number.parseInt(base.estoqueMinimoNeckring, 10);
-    base.estoqueMinimoFunil = Number.parseInt(base.estoqueMinimoFunil, 10);
-    if (!Number.isFinite(base.estoqueMinimoMolde)) base.estoqueMinimoMolde = limitePadrao;
-    if (!Number.isFinite(base.estoqueMinimoBlank)) base.estoqueMinimoBlank = limitePadrao;
-    if (!Number.isFinite(base.estoqueMinimoNeckring)) base.estoqueMinimoNeckring = limitePadrao;
-    if (!Number.isFinite(base.estoqueMinimoFunil)) base.estoqueMinimoFunil = limitePadrao;
-    base.estoqueMinimo = Math.min(base.estoqueMinimoMolde, base.estoqueMinimoBlank, base.estoqueMinimoNeckring, base.estoqueMinimoFunil);
-    base.criticoMoldeAtivo = base.criticoMoldeAtivo !== false;
-    base.criticoBlankAtivo = base.criticoBlankAtivo !== false;
-    base.criticoNeckringAtivo = base.criticoNeckringAtivo !== false;
-    base.criticoFunilAtivo = base.criticoFunilAtivo !== false;
-    return base;
-}
-function obterRegrasCriticas() {
-    return [
-        { campo: 'molde', rotulo: 'Molde', limite: config.estoqueMinimoMolde, ativo: config.criticoMoldeAtivo },
-        { campo: 'blank', rotulo: 'Blank', limite: config.estoqueMinimoBlank, ativo: config.criticoBlankAtivo },
-        { campo: 'neck_ring', rotulo: 'Neck Ring', limite: config.estoqueMinimoNeckring, ativo: config.criticoNeckringAtivo },
-        { campo: 'funil', rotulo: 'Funil', limite: config.estoqueMinimoFunil, ativo: config.criticoFunilAtivo }
-    ];
-}
-function obterItensCriticos(maquina) {
-    return obterRegrasCriticas().filter(regra => regra.ativo && ((maquina?.[regra.campo] || 0) <= regra.limite));
-}
-function maquinaEstaCritica(maquina) { return obterItensCriticos(maquina).length > 0; }
-function atualizarResumoLimitesCriticos() {
-    const el = document.getElementById('estoqueMinimoLabel');
-    if (!el) return;
-    const ativos = obterRegrasCriticas().filter(regra => regra.ativo);
-    el.textContent = ativos.length ? ativos.map(regra => `${regra.rotulo} ≤ ${regra.limite}`).join(' | ') : 'nenhum item ativo';
-}
-function aplicarConfiguracoesNoPainelAdmin() {
-    const setChecked = (id, value) => { const el = document.getElementById(id); if (el) el.checked = Boolean(value); };
-    const setValue = (id, value) => { const el = document.getElementById(id); if (el) el.value = value; };
-    setChecked('toggleReserva', config.mostrarReserva);
-    setChecked('toggleFunil', config.mostrarFunil);
-    setChecked('toggleNeckring', config.mostrarNeckring);
-    setChecked('toggleBlank', config.mostrarBlank);
-    setChecked('toggleMolde', config.mostrarMolde);
-    setChecked('togglePrefixo', config.mostrarPrefixo);
-    setChecked('toggleAlertas', config.alertasAtivos);
-    setChecked('toggleAnimacoes', config.animacoesAtivas);
-    setChecked('autoAtualizar', config.autoAtualizar);
-    setChecked('mostrarTotais', config.mostrarTotais);
-    setChecked('mostrarGraficos', config.mostrarGraficos);
-    setChecked('criticoMoldeAtivo', config.criticoMoldeAtivo);
-    setChecked('criticoBlankAtivo', config.criticoBlankAtivo);
-    setChecked('criticoNeckringAtivo', config.criticoNeckringAtivo);
-    setChecked('criticoFunilAtivo', config.criticoFunilAtivo);
-    setValue('estoqueMinimoMolde', config.estoqueMinimoMolde);
-    setValue('estoqueMinimoBlank', config.estoqueMinimoBlank);
-    setValue('estoqueMinimoNeckring', config.estoqueMinimoNeckring);
-    setValue('estoqueMinimoFunil', config.estoqueMinimoFunil);
-}
 
 // ====================================================
 // SISTEMA DE LOGIN
@@ -231,9 +163,26 @@ function carregarConfiguracoes() {
     db.ref("configuracoes").once("value").then(snapshot => {
         const configSalva = snapshot.val();
         if (configSalva) {
-            config = normalizarConfiguracoes(configSalva);
-            aplicarConfiguracoesNoPainelAdmin();
-            atualizarResumoLimitesCriticos();
+            config = configSalva;
+            
+            // Aplicar configurações aos checkboxes (se o painel admin existir)
+            if (document.getElementById('toggleReserva')) {
+                document.getElementById('toggleReserva').checked = config.mostrarReserva;
+                document.getElementById('toggleFunil').checked = config.mostrarFunil;
+                document.getElementById('toggleNeckring').checked = config.mostrarNeckring;
+                document.getElementById('toggleBlank').checked = config.mostrarBlank;
+                document.getElementById('toggleMolde').checked = config.mostrarMolde;
+                document.getElementById('togglePrefixo').checked = config.mostrarPrefixo;
+                document.getElementById('toggleAlertas').checked = config.alertasAtivos;
+                document.getElementById('toggleAnimacoes').checked = config.animacoesAtivas;
+                document.getElementById('autoAtualizar').checked = config.autoAtualizar;
+                document.getElementById('mostrarTotais').checked = config.mostrarTotais;
+                document.getElementById('mostrarGraficos').checked = config.mostrarGraficos;
+                document.getElementById('estoqueMinimo').value = config.estoqueMinimo;
+            }
+            
+            // Atualizar label do estoque mínimo
+            document.getElementById('estoqueMinimoLabel').textContent = config.estoqueMinimo;
             
             // Aplicar tema
             aplicarTema(config.tema);
@@ -251,11 +200,6 @@ function carregarConfiguracoes() {
             }
             
             console.log("✅ Configurações carregadas");
-        } else {
-            config = normalizarConfiguracoes(config);
-            aplicarConfiguracoesNoPainelAdmin();
-            atualizarResumoLimitesCriticos();
-            aplicarTema(config.tema);
         }
     }).catch(error => {
         console.error("❌ Erro ao carregar configurações:", error);
@@ -303,18 +247,15 @@ function carregarPrefixos() {
 // ====================================================
 
 function inicializarFirebaseListeners() {
-    // Listener para dados das máquinas
+    // Listener em tempo real para dados das máquinas.
+    // Qualquer alteração feita em outra tela/usuário atualiza o dashboard sem precisar clicar em Atualizar.
     db.ref("maquinas").on("value", snapshot => {
         const dados = snapshot.val();
         if (dados) {
-            dadosMaquinas = dados;
-            criarPainel(dados);
-            
-            // Atualizar gráficos
-            if (config.mostrarGraficos) {
-                atualizarGrafico(dados);
-                atualizarGraficoTotal(dados);
-            }
+            window.__wmoldesUltimoSnapshotMaquinas = dados;
+            window.__wmoldesUltimaMudancaMaquinas = Date.now();
+            aplicarDadosMaquinas(dados);
+            agendarAtualizacaoTempoRealMaquinas(dados);
         }
     });
     
@@ -334,7 +275,7 @@ function inicializarFirebaseListeners() {
             config = configSalva;
             
             // Aplicar configurações imediatamente
-            atualizarResumoLimitesCriticos();
+            document.getElementById('estoqueMinimoLabel').textContent = config.estoqueMinimo;
             
             const totaisElement = document.getElementById('totais');
             if (totaisElement) {
@@ -361,119 +302,135 @@ function inicializarFirebaseListeners() {
 // ====================================================
 
 function criarPainel(maquinas) {
-    dadosMaquinas = maquinas || {};
-    const filtroInput = document.getElementById("filtro");
-    const filtro = filtroInput ? filtroInput.value.toLowerCase().trim() : "";
+    dadosMaquinas = maquinas;
+    const filtro = document.getElementById("filtro").value.toLowerCase();
     const painel = document.getElementById("painel");
-
+    
     if (!painel) return;
-
+    
     painel.innerHTML = "";
-
+    
+    // Inicializar totais
     let totalMolde = 0;
     let totalBlank = 0;
     let totalNeckRing = 0;
     let totalFunil = 0;
     let totalCriticos = 0;
 
-    let maquinasFiltradas = Object.entries(dadosMaquinas);
-
+    // Filtrar máquinas (todas ou apenas críticas)
+    let maquinasFiltradas = Object.entries(maquinas);
+    
     if (mostrarCriticos) {
-        maquinasFiltradas = maquinasFiltradas.filter(([_, m]) => maquinaEstaCritica(m));
+        maquinasFiltradas = maquinasFiltradas
+            .filter(([_, m]) => 
+                (m.molde || 0) <= config.estoqueMinimo || 
+                (m.blank || 0) <= config.estoqueMinimo ||
+                (m.funil || 0) <= config.estoqueMinimo
+            );
     }
 
-    if (fornosAtivos.size > 0) {
-        maquinasFiltradas = maquinasFiltradas.filter(([id]) =>
-            Array.from(fornosAtivos).some(forno => maquinaPertenceAoForno(id, forno))
-        );
+    // Filtrar por forno
+    if (fornoAtivo !== 'todos') {
+        // Array de IDs esperados para cada forno
+        const idsEsperados = {
+            'A': ['A1', 'A2', 'A3', 'A4', 'A5', 'A6'],
+            'B': ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8'],
+            'C': ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8'],
+            'D': ['10', '11', '12', '13', '14', '15']
+        };
+        
+        if (idsEsperados[fornoAtivo]) {
+            maquinasFiltradas = maquinasFiltradas.filter(([id, _]) => 
+                idsEsperados[fornoAtivo].includes(id)
+            );
+        }
     }
 
-    maquinasFiltradas.sort((a, b) => ordenarMaquinasPorId(a[0], b[0]));
+    // Ordenar máquinas por ID
+    maquinasFiltradas.sort((a, b) => a[0].localeCompare(b[0]));
 
+    // Criar cartão para cada máquina
     for (let [id, m] of maquinasFiltradas) {
+        // Pular máquinas que não correspondem ao filtro
         if (filtro && !id.toLowerCase().includes(filtro)) continue;
-
+        
+        // Calcular totais
         totalMolde += m.molde || 0;
         totalBlank += m.blank || 0;
         totalNeckRing += m.neck_ring || 0;
         totalFunil += m.funil || 0;
-
-        const itensCriticos = obterItensCriticos(m);
-        const alerta = config.alertasAtivos && itensCriticos.length > 0;
-
-        if (itensCriticos.length > 0) totalCriticos++;
+        
+        // Verificar se a máquina está em estado crítico
+        const alerta = config.alertasAtivos && (
+            (m.molde || 0) <= config.estoqueMinimo || 
+            (m.blank || 0) <= config.estoqueMinimo ||
+            (m.funil || 0) <= config.estoqueMinimo
+        );
+        
+        if (alerta) totalCriticos++;
 
         const isInMaintenance = isMachineInMaintenance(id);
         const maintenanceReason = machineMaintenance[id]?.reason || machineMaintenance[id]?.motivo || '';
-
-        const maquinaAmostra = Boolean(m.amostra);
-
+        
+        // Construir o HTML do cartão da máquina
         let maquinaHTML = `
-            <div class="maquina ${alerta ? "alerta" : ""} ${maquinaAmostra ? "maquina-amostra" : ""} ${isInMaintenance ? "maintenance" : ""}">
+            <div class="maquina ${alerta ? 'alerta' : ''} ${isInMaintenance ? 'maintenance' : ''}">
                 <div class="maquina-header">
-                    <button
-                        type="button"
-                        class="maquina-id maquina-id-clickable ${maquinaAmostra ? "ativa" : ""}"
-                        onclick="alternarMaquinaAmostra('${id}')"
-                        title="Marcar ou desmarcar ${id} como máquina amostra"
-                        aria-pressed="${maquinaAmostra}">
-                        <i class="fas fa-industry"></i>
-                        <span class="maquina-texto">Máquina</span><span class="maquina-codigo">${id}</span>
-                    </button>`;
-
+                    <div class="maquina-id"><i class="fas fa-industry"></i> Máquina ${id}</div>`;
+        
+        // Adicionar prefixo se estiver ativado
         if (config.mostrarPrefixo) {
-            const currentPrefixo = m.prefixo || "";
+            const currentPrefixo = m.prefixo || '';
             const currentPrefixDisplay = getMachinePrefixDisplay(m, prefixos);
             const currentPrefixRecord =
                 findPrefixRecord(prefixos, currentPrefixo) ||
                 findPrefixRecord(prefixos, currentPrefixDisplay);
 
             maquinaHTML += `
-                    <div class="prefixo-container">
-                        <div class="prefixo-actions">
-                            <div class="custom-select">
-                                <div class="select-selected" onclick="toggleCustomSelect('${id}')">
-                                    ${currentPrefixDisplay || currentPrefixo || "Selecione um prefixo"}
-                                </div>
-                                <div class="select-items" id="select-${id}">
-                                    <div class="select-search-container prefix-create-row">
-                                        <input type="text" id="prefix-search-${id}" class="select-search" placeholder="Pesquisar prefixo..."
-                                               oninput="filtrarOpcoes('${id}', this.value)" onkeydown="criarPrefixoComEnter(event, '${id}')">
-                                        <button type="button" class="prefix-add-btn" onclick="criarPrefixoPeloFiltro('${id}', event)" title="Criar prefixo principal e vincular à máquina">
-                                            <i class="fas fa-plus"></i>
-                                        </button>
-                                    </div>
-                                    ${prefixos.map(pref => `
-                                        <div onclick="selecionarPrefixo('${id}', '${pref.id}')"
-                                             ${pref.id === currentPrefixo || pref.displayName === currentPrefixDisplay ? "class=\"selected\"" : ""}>
-                                            <strong>${pref.displayName || pref.nome}</strong>
-                                            ${pref.id !== (pref.displayName || pref.nome) ? `<small style="display:block; opacity:.7; margin-top:2px;">${pref.id}</small>` : ""}
-                                        </div>
-                                    `).join("")}
-                                </div>
+                <div class="prefixo-container">
+                    <div class="prefixo-actions">
+                        <div class="custom-select">
+                            <div class="select-selected" onclick="toggleCustomSelect('${id}')">
+                                ${currentPrefixDisplay || currentPrefixo || 'Selecione um prefixo'}
                             </div>
-                            <button
-                                type="button"
-                                class="prefixo-view-btn ${currentPrefixRecord ? "" : "disabled"}"
-                                onclick="abrirDetalhesPrefixo('${id}')"
-                                title="Visualizar informações do prefixo detalhado"
-                                ${currentPrefixRecord ? "" : "disabled"}>
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button
-                                type="button"
-                                class="maintenance-toggle-btn ${isMachineInMaintenance(id) ? 'active' : ''}"
-                                onclick="toggleMachineMaintenance('${id}')"
-                                title="${isMachineInMaintenance(id) ? 'Retirar da manutenção' : 'Colocar em parada para manutenção'}"
-                                aria-pressed="${isMachineInMaintenance(id)}">
-                                <i class="fas fa-tools"></i>
-                            </button>
+                            <div class="select-items" id="select-${id}">
+                                <div class="select-search-container prefix-create-row">
+                                    <input type="text" id="prefix-search-${id}" class="select-search" placeholder="Pesquisar prefixo..." 
+                                           oninput="filtrarOpcoes('${id}', this.value)" onkeydown="criarPrefixoComEnter(event, '${id}')">
+                                    <button type="button" class="prefix-add-btn" onclick="criarPrefixoPeloFiltro('${id}', event)" title="Criar prefixo principal e vincular à máquina">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                ${prefixos.map(pref => `
+                                    <div onclick="selecionarPrefixo('${id}', '${pref.id}')" 
+                                         ${pref.id === currentPrefixo || pref.displayName === currentPrefixDisplay ? 'class="selected"' : ''}>
+                                        <strong>${pref.displayName || pref.nome}</strong>
+                                        ${pref.id !== (pref.displayName || pref.nome) ? `<small style="display:block; opacity:.7; margin-top:2px;">${pref.id}</small>` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
                         </div>
-                    </div>`;
-        }
-
-        maquinaHTML += `
+                        <button
+                            type="button"
+                            class="prefixo-view-btn ${currentPrefixRecord ? '' : 'disabled'}"
+                            onclick="abrirDetalhesPrefixo('${id}')"
+                            title="Visualizar informações do prefixo detalhado"
+                            ${currentPrefixRecord ? '' : 'disabled'}>
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button
+                            type="button"
+                            class="maintenance-toggle-btn ${isMachineInMaintenance(id) ? 'active' : ''}"
+                            onclick="toggleMachineMaintenance('${id}')"
+                            title="${isMachineInMaintenance(id) ? 'Retirar da manutenção' : 'Colocar em parada para manutenção'}"
+                            aria-pressed="${isMachineInMaintenance(id)}">
+                            <i class="fas fa-tools"></i>
+                        </button>
+                    </div>
                 </div>`;
+        }
+        
+        maquinaHTML += `</div>`;
 
         if (isInMaintenance) {
             maquinaHTML += `
@@ -481,110 +438,229 @@ function criarPainel(maquinas) {
                     <i class="fas fa-tools"></i> Parada para manutenção${maintenanceReason ? `: ${maintenanceReason}` : ''}
                 </div>`;
         }
-
-        if (config.mostrarMolde) {
-            maquinaHTML += renderLinhaControle(id, "molde", "Molde", "fas fa-cube", "molde-bg", m.molde || 0);
-            if (config.mostrarReserva) maquinaHTML += renderLinhaControle(id, "molde_reserva", "Reserva", "fas fa-warehouse", "molde-bg", m.molde_reserva || 0, true);
-        }
-
-        if (config.mostrarBlank) {
-            maquinaHTML += renderLinhaControle(id, "blank", "Blank", "fas fa-cube", "blank-bg", m.blank || 0);
-            if (config.mostrarReserva) maquinaHTML += renderLinhaControle(id, "blank_reserva", "Reserva", "fas fa-warehouse", "blank-bg", m.blank_reserva || 0, true);
-        }
-
-        if (config.mostrarNeckring) {
-            maquinaHTML += renderLinhaControle(id, "neck_ring", "Neck Ring", "fas fa-ring", "neckring-bg", m.neck_ring || 0);
-            if (config.mostrarReserva) maquinaHTML += renderLinhaControle(id, "neck_ring_reserva", "Reserva", "fas fa-warehouse", "neckring-bg", m.neck_ring_reserva || 0, true);
-        }
-
-        if (config.mostrarFunil) {
-            maquinaHTML += renderLinhaControle(id, "funil", "Funil", "fas fa-filter", "funil-bg", m.funil || 0);
-            if (config.mostrarReserva) maquinaHTML += renderLinhaControle(id, "funil_reserva", "Reserva", "fas fa-warehouse", "funil-bg", m.funil_reserva || 0, true);
-        }
-
-        if (maquinaAmostra) {
-            maquinaHTML += `
-                <div class="amostra-message">
-                    <i class="fas fa-vial"></i> Máquina amostra
-                </div>`;
-        }
-
-        if (alerta) {
-            maquinaHTML += `
-                <div class="alert-message">
-                    <i class="fas fa-exclamation-triangle"></i> Estoque crítico: ${itensCriticos.map(item => `${item.rotulo} ≤ ${item.limite}`).join(' | ')}
-                </div>`;
-        }
-
-        maquinaHTML += `
-            </div>`;
-
-        painel.insertAdjacentHTML("beforeend", maquinaHTML);
-    }
-
-    atualizarTotais(totalMolde, totalBlank, totalNeckRing, totalFunil, totalCriticos);
-}
-
-function renderLinhaControle(maquinaId, tipo, rotulo, icone, classeBotao, valor, reserva = false) {
-    const labelClass = obterClasseLabel(tipo);
-    const reservaClass = reserva ? " reserva" : "";
-    const reservaLabelClass = reserva ? " reserva-label" : "";
-
-    return `
-        <div class="linha${reservaClass}">
-            <span class="${labelClass}${reservaLabelClass}"><i class="${icone}"></i> ${rotulo}:</span>
+        
+        // Molde
+if (config.mostrarMolde) {
+    maquinaHTML += `
+        <div class="linha">
+            <span class="molde-label"><i class="fas fa-cube"></i> Molde:</span>
             <div class="controles">
-                <div class="btn-group decrementos">
-                    <button class="${classeBotao}" onclick="alterar('${maquinaId}', '${tipo}', -10)">-10</button>
-                    <button class="${classeBotao}" onclick="alterar('${maquinaId}', '${tipo}', -5)">-5</button>
-                    <button class="${classeBotao}" onclick="alterar('${maquinaId}', '${tipo}', -2)">-2</button>
-                    <button class="${classeBotao}" onclick="alterar('${maquinaId}', '${tipo}', -1)">-1</button>
+                <div class="btn-group">
+                    <button class="molde-bg" onclick="alterar('${id}', 'molde', -10)">-10</button>
+                    <button class="molde-bg" onclick="alterar('${id}', 'molde', -5)">-5</button>
+                    <button class="molde-bg" onclick="alterar('${id}', 'molde', -2)">-2</button>
+                    <button class="molde-bg" onclick="alterar('${id}', 'molde', -1)">-1</button>
                 </div>
-                <div class="valor-controle">
-                    <span id="${maquinaId}-${tipo}">${valor}</span>
-                    <input type="number" class="input-digitado" id="input-${maquinaId}-${tipo}" value="${valor}"
-                           onblur="atualizarPorInput('${maquinaId}', '${tipo}', this.value)"
-                           onkeypress="if(event.key === 'Enter') { atualizarPorInput('${maquinaId}', '${tipo}', this.value); this.blur(); }">
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <span id="${id}-molde">${m.molde || 0}</span>
+                    <input type="number" 
+                           class="input-digitado" 
+                           id="input-${id}-molde" 
+                           value="${m.molde || 0}"
+                           style="width: 60px; padding: 2px; text-align: center; margin-top: 5px; display: none;"
+                           onblur="atualizarPorInput('${id}', 'molde', this.value)"
+                           onkeypress="if(event.key === 'Enter') { atualizarPorInput('${id}', 'molde', this.value); this.blur(); }">
                 </div>
-                <div class="btn-group incrementos">
-                    <button class="${classeBotao}" onclick="alterar('${maquinaId}', '${tipo}', 1)">+1</button>
-                    <button class="${classeBotao}" onclick="alterar('${maquinaId}', '${tipo}', 2)">+2</button>
-                    <button class="${classeBotao}" onclick="alterar('${maquinaId}', '${tipo}', 5)">+5</button>
-                    <button class="${classeBotao}" onclick="alterar('${maquinaId}', '${tipo}', 10)">+10</button>
+                <div class="btn-group">
+                    <button class="molde-bg" onclick="alterar('${id}', 'molde', 1)">+1</button>
+                    <button class="molde-bg" onclick="alterar('${id}', 'molde', 2)">+2</button>
+                    <button class="molde-bg" onclick="alterar('${id}', 'molde', 5)">+5</button>
+                    <button class="molde-bg" onclick="alterar('${id}', 'molde', 10)">+10</button>
                 </div>
-                <button class="btn-digitado" onclick="toggleModoDigitado('${maquinaId}', '${tipo}')" title="Digitar valor manualmente" aria-label="Digitar valor manualmente">
+                <button class="btn-digitado" onclick="toggleModoDigitado('${id}', 'molde')">
                     <i class="fas fa-keyboard"></i>
                 </button>
             </div>
         </div>`;
-}
+            
+            // Molde Reserva
+            if (config.mostrarReserva) {
+                maquinaHTML += `
+                    <div class="linha reserva">
+                        <span class="molde-label reserva-label"><i class="fas fa-warehouse"></i> Reserva:</span>
+                        <div class="controles">
+                            <div class="btn-group">
+                                <button class="molde-bg" onclick="alterar('${id}', 'molde_reserva', -10)">-10</button>
+                                <button class="molde-bg" onclick="alterar('${id}', 'molde_reserva', -5)">-5</button>
+                                <button class="molde-bg" onclick="alterar('${id}', 'molde_reserva', -2)">-2</button>
+                                <button class="molde-bg" onclick="alterar('${id}', 'molde_reserva', -1)">-1</button>
+                            </div>
+                            <span id="${id}-molde_reserva">${m.molde_reserva || 0}</span>
+                            <div class="btn-group">
+                                <button class="molde-bg" onclick="alterar('${id}', 'molde_reserva', 1)">+1</button>
+                                <button class="molde-bg" onclick="alterar('${id}', 'molde_reserva', 2)">+2</button>
+                                <button class="molde-bg" onclick="alterar('${id}', 'molde_reserva', 5)">+5</button>
+                                <button class="molde-bg" onclick="alterar('${id}', 'molde_reserva', 10)">+10</button>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+        }
+        
+        // Blank
+if (config.mostrarBlank) {
+    maquinaHTML += `
+        <div class="linha">
+            <span class="blank-label"><i class="fas fa-cube"></i> Blank:</span>
+            <div class="controles">
+                <div class="btn-group">
+                    <button class="blank-bg" onclick="alterar('${id}', 'blank', -10)">-10</button>
+                    <button class="blank-bg" onclick="alterar('${id}', 'blank', -5)">-5</button>
+                    <button class="blank-bg" onclick="alterar('${id}', 'blank', -2)">-2</button>
+                    <button class="blank-bg" onclick="alterar('${id}', 'blank', -1)">-1</button>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <span id="${id}-blank">${m.blank || 0}</span>
+                    <input type="number" 
+                           class="input-digitado" 
+                           id="input-${id}-blank" 
+                           value="${m.blank || 0}"
+                           style="width: 60px; padding: 2px; text-align: center; margin-top: 5px; display: none;"
+                           onblur="atualizarPorInput('${id}', 'blank', this.value)"
+                           onkeypress="if(event.key === 'Enter') { atualizarPorInput('${id}', 'blank', this.value); this.blur(); }">
+                </div>
+                <div class="btn-group">
+                    <button class="blank-bg" onclick="alterar('${id}', 'blank', 1)">+1</button>
+                    <button class="blank-bg" onclick="alterar('${id}', 'blank', 2)">+2</button>
+                    <button class="blank-bg" onclick="alterar('${id}', 'blank', 5)">+5</button>
+                    <button class="blank-bg" onclick="alterar('${id}', 'blank', 10)">+10</button>
+                </div>
+                <button class="btn-digitado" onclick="toggleModoDigitado('${id}', 'blank')">
+                    <i class="fas fa-keyboard"></i>
+                </button>
+            </div>
+        </div>`;
+            
+            // Blank Reserva
+            if (config.mostrarReserva) {
+                maquinaHTML += `
+                    <div class="linha reserva">
+                        <span class="blank-label reserva-label"><i class="fas fa-warehouse"></i> Reserva:</span>
+                        <div class="controles">
+                            <div class="btn-group">
+                                <button class="blank-bg" onclick="alterar('${id}', 'blank_reserva', -10)">-10</button>
+                                <button class="blank-bg" onclick="alterar('${id}', 'blank_reserva', -5)">-5</button>
+                                <button class="blank-bg" onclick="alterar('${id}', 'blank_reserva', -2)">-2</button>
+                                <button class="blank-bg" onclick="alterar('${id}', 'blank_reserva', -1)">-1</button>
+                            </div>
+                            <span id="${id}-blank_reserva">${m.blank_reserva || 0}</span>
+                            <div class="btn-group">
+                                <button class="blank-bg" onclick="alterar('${id}', 'blank_reserva', 1)">+1</button>
+                                <button class="blank-bg" onclick="alterar('${id}', 'blank_reserva', 2)">+2</button>
+                                <button class="blank-bg" onclick="alterar('${id}', 'blank_reserva', 5)">+5</button>
+                                <button class="blank-bg" onclick="alterar('${id}', 'blank_reserva', 10)">+10</button>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+        }
+        
+        // Neck Ring
+        if (config.mostrarNeckring) {
+            maquinaHTML += `
+                <div class="linha">
+                    <span class="neckring-label"><i class="fas fa-ring"></i> Neck Ring:</span>
+                    <div class="controles">
+                        <div class="btn-group">
+                            <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring', -10)">-10</button>
+                            <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring', -5)">-5</button>
+                            <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring', -2)">-2</button>
+                            <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring', -1)">-1</button>
+                        </div>
+                        <span id="${id}-neck_ring">${m.neck_ring || 0}</span>
+                        <div class="btn-group">
+                            <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring', 1)">+1</button>
+                            <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring', 2)">+2</button>
+                            <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring', 5)">+5</button>
+                            <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring', 10)">+10</button>
+                        </div>
+                    </div>
+                </div>`;
+            
+            // Neck Ring Reserva
+            if (config.mostrarReserva) {
+                maquinaHTML += `
+                    <div class="linha reserva">
+                        <span class="neckring-label reserva-label"><i class="fas fa-warehouse"></i> Reserva:</span>
+                        <div class="controles">
+                            <div class="btn-group">
+                                <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring_reserva', -10)">-10</button>
+                                <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring_reserva', -5)">-5</button>
+                                <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring_reserva', -2)">-2</button>
+                                <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring_reserva', -1)">-1</button>
+                            </div>
+                            <span id="${id}-neck_ring_reserva">${m.neck_ring_reserva || 0}</span>
+                            <div class="btn-group">
+                                <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring_reserva', 1)">+1</button>
+                                <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring_reserva', 2)">+2</button>
+                                <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring_reserva', 5)">+5</button>
+                                <button class="neckring-bg" onclick="alterar('${id}', 'neck_ring_reserva', 10)">+10</button>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+        }
+        
+        // Funil
+        if (config.mostrarFunil) {
+            maquinaHTML += `
+                <div class="linha">
+                    <span class="funil-label"><i class="fas fa-filter"></i> Funil:</span>
+                    <div class="controles">
+                        <div class="btn-group">
+                            <button class="funil-bg" onclick="alterar('${id}', 'funil', -10)">-10</button>
+                            <button class="funil-bg" onclick="alterar('${id}', 'funil', -5)">-5</button>
+                            <button class="funil-bg" onclick="alterar('${id}', 'funil', -2)">-2</button>
+                            <button class="funil-bg" onclick="alterar('${id}', 'funil', -1)">-1</button>
+                        </div>
+                        <span id="${id}-funil">${m.funil || 0}</span>
+                        <div class="btn-group">
+                            <button class="funil-bg" onclick="alterar('${id}', 'funil', 1)">+1</button>
+                            <button class="funil-bg" onclick="alterar('${id}', 'funil', 2)">+2</button>
+                            <button class="funil-bg" onclick="alterar('${id}', 'funil', 5)">+5</button>
+                            <button class="funil-bg" onclick="alterar('${id}', 'funil', 10)">+10</button>
+                        </div>
+                    </div>
+                </div>`;
+            
+            // Funil Reserva
+            if (config.mostrarReserva) {
+                maquinaHTML += `
+                    <div class="linha reserva">
+                        <span class="funil-label reserva-label"><i class="fas fa-warehouse"></i> Reserva:</span>
+                        <div class="controles">
+                            <div class="btn-group">
+                                <button class="funil-bg" onclick="alterar('${id}', 'funil_reserva', -10)">-10</button>
+                                <button class="funil-bg" onclick="alterar('${id}', 'funil_reserva', -5)">-5</button>
+                                <button class="funil-bg" onclick="alterar('${id}', 'funil_reserva', -2)">-2</button>
+                                <button class="funil-bg" onclick="alterar('${id}', 'funil_reserva', -1)">-1</button>
+                            </div>
+                            <span id="${id}-funil_reserva">${m.funil_reserva || 0}</span>
+                            <div class="btn-group">
+                                <button class="funil-bg" onclick="alterar('${id}', 'funil_reserva', 1)">+1</button>
+                                <button class="funil-bg" onclick="alterar('${id}', 'funil_reserva', 2)">+2</button>
+                                <button class="funil-bg" onclick="alterar('${id}', 'funil_reserva', 5)">+5</button>
+                                <button class="funil-bg" onclick="alterar('${id}', 'funil_reserva', 10)">+10</button>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+        }
+        
+        // Mensagem de alerta se necessário
+        if (alerta) {
+            maquinaHTML += `
+                <div class="alert-message">
+                    <i class="fas fa-exclamation-triangle"></i> Estoque em nível crítico (≤ ${config.estoqueMinimo} peças)
+                </div>`;
+        }
+        
+        maquinaHTML += `</div>`;
+        painel.innerHTML += maquinaHTML;
+    }
 
-function obterClasseLabel(tipo) {
-    if (tipo.startsWith("molde")) return "molde-label";
-    if (tipo.startsWith("blank")) return "blank-label";
-    if (tipo.startsWith("neck_ring")) return "neckring-label";
-    if (tipo.startsWith("funil")) return "funil-label";
-    return "molde-label";
-}
-
-function maquinaPertenceAoForno(maquinaId, forno) {
-    const id = String(maquinaId).trim().toUpperCase();
-    if (forno === "A") return /^A[1-6]$/.test(id);
-    if (forno === "B") return /^B[1-8]$/.test(id);
-    if (forno === "C") return /^C[1-8]$/.test(id);
-    if (forno === "D") return /^D1[0-5]$/.test(id) || /^1[0-5]$/.test(id);
-    return true;
-}
-
-function ordenarMaquinasPorId(a, b) {
-    const parse = (value) => {
-        const match = String(value).toUpperCase().match(/^([A-Z]*)(\d+)$/);
-        return match ? { prefixo: match[1] || "D", numero: Number(match[2]) } : { prefixo: String(value), numero: 0 };
-    };
-    const itemA = parse(a);
-    const itemB = parse(b);
-    if (itemA.prefixo !== itemB.prefixo) return itemA.prefixo.localeCompare(itemB.prefixo);
-    return itemA.numero - itemB.numero;
+    // Atualizar totais no painel
+    atualizarTotais(totalMolde, totalBlank, totalNeckRing, totalFunil, totalCriticos);
 }
 
 // ====================================================
@@ -758,6 +834,9 @@ async function alterar(maquinaId, tipo, delta) {
     }
 
     const normalizedTipo = (window.WMHistory && WMHistory.normalizeField) ? WMHistory.normalizeField(tipo) : tipo;
+    const writeKey = `${maquinaId}:${normalizedTipo}`;
+    if (pendingMachineWrites.has(writeKey)) return;
+
     const element = document.getElementById(`${maquinaId}-${tipo}`) || document.getElementById(`${maquinaId}-${normalizedTipo}`);
     const previousValue = parseInt(element?.textContent) || 0;
     const optimisticValue = Math.max(0, previousValue + Number(delta || 0));
@@ -772,11 +851,13 @@ async function alterar(maquinaId, tipo, delta) {
         }, 200);
     }
 
+    pendingMachineWrites.add(writeKey);
+
     try {
         let committedValue;
         if (window.WMHistory && typeof WMHistory.atomicDelta === 'function') {
             committedValue = await WMHistory.atomicDelta(maquinaId, normalizedTipo, delta, {
-                origem: 'abastecedor_botao',
+                origem: 'botao_rapido',
                 field: normalizedTipo
             });
         } else {
@@ -785,11 +866,14 @@ async function alterar(maquinaId, tipo, delta) {
             if (!tx.committed) throw new Error('Transação cancelada.');
             committedValue = parseInt(tx.snapshot.val(), 10) || 0;
         }
+
         if (element) element.textContent = committedValue;
     } catch (error) {
         console.error('❌ Erro ao alterar quantidade:', error);
         if (element) element.textContent = previousValue;
         mostrarNotificacao(`Erro ao salvar alteração da máquina ${maquinaId}.`, 'error');
+    } finally {
+        pendingMachineWrites.delete(writeKey);
     }
 }
 
@@ -797,40 +881,40 @@ async function alterar(maquinaId, tipo, delta) {
 // FUNÇÃO: ATUALIZAR PREFIXO DA MÁQUINA
 // ====================================================
 
-function atualizarPrefixo(maquinaId, prefixoId) {
-    const ref = db.ref(`maquinas/${maquinaId}/prefixo`);
-    ref.set(prefixoId);
-    
-    mostrarNotificacao(`Prefixo atualizado para: ${prefixoId}`, "info");
-}
+async function atualizarPrefixo(maquinaId, prefixoId) {
+    const machine = dadosMaquinas?.[maquinaId] || {};
+    const before = machine.prefixo || '';
+    const after = String(prefixoId || '').trim();
 
+    if (before === after) return;
 
-function alternarMaquinaAmostra(maquinaId) {
-    const atual = Boolean(dadosMaquinas?.[maquinaId]?.amostra);
-    const novoEstado = !atual;
+    try {
+        if (typeof setWithAudit === 'function') {
+            await setWithAudit(`maquinas/${maquinaId}/prefixo`, after, {
+                action: `atualizou prefixo da máquina ${maquinaId}`,
+                details: `Prefixo alterado de ${before || 'vazio'} para ${after || 'vazio'}.`,
+                entityType: 'machine_prefix',
+                entityId: maquinaId,
+                extra: {
+                    machineId: maquinaId,
+                    field: 'prefixo',
+                    origem: 'seletor_prefixo'
+                }
+            });
+        } else {
+            await db.ref(`maquinas/${maquinaId}/prefixo`).set(after);
+        }
 
-    if (!dadosMaquinas[maquinaId]) {
-        dadosMaquinas[maquinaId] = {};
+        if (dadosMaquinas?.[maquinaId]) {
+            dadosMaquinas[maquinaId].prefixo = after;
+        }
+
+        mostrarNotificacao(`Prefixo atualizado para: ${after}`, 'info');
+    } catch (error) {
+        console.error('❌ Erro ao atualizar prefixo:', error);
+        mostrarNotificacao(`Erro ao atualizar prefixo da máquina ${maquinaId}.`, 'error');
     }
-    dadosMaquinas[maquinaId].amostra = novoEstado;
-
-    db.ref(`maquinas/${maquinaId}/amostra`).set(novoEstado)
-        .then(() => {
-            criarPainel(dadosMaquinas);
-            mostrarNotificacao(
-                novoEstado
-                    ? `Máquina ${maquinaId} marcada como amostra.`
-                    : `Máquina ${maquinaId} removida de amostra.`,
-                "info"
-            );
-        })
-        .catch(error => {
-            dadosMaquinas[maquinaId].amostra = atual;
-            mostrarNotificacao(`Erro ao atualizar máquina amostra: ${error.message}`, "error");
-        });
 }
-
-window.alternarMaquinaAmostra = alternarMaquinaAmostra;
 
 // ====================================================
 // FUNÇÃO: FILTRAR MÁQUINAS
@@ -845,62 +929,20 @@ function filtrar() {
 // ====================================================
 
 function filtrarPorForno(forno) {
-    const botoes = {
-        todos: document.getElementById("btnTodos"),
-        A: document.getElementById("btnFornoA"),
-        B: document.getElementById("btnFornoB"),
-        C: document.getElementById("btnFornoC"),
-        D: document.getElementById("btnFornoD")
-    };
-
-    if (forno === "todos") {
-        fornosAtivos.clear();
-    } else if (["A", "B", "C", "D"].includes(forno)) {
-        if (fornosAtivos.has(forno)) {
-            fornosAtivos.delete(forno);
-        } else {
-            fornosAtivos.add(forno);
-        }
-    }
-
-    Object.entries(botoes).forEach(([chave, btn]) => {
-        if (!btn) return;
-
-        const ativo = chave === "todos"
-            ? fornosAtivos.size === 0
-            : fornosAtivos.has(chave);
-
-        btn.classList.toggle("active", ativo);
-        btn.setAttribute("aria-pressed", String(ativo));
-    });
-
+    fornoAtivo = forno;
+    
+    // Atualizar botões ativos
+    document.getElementById('btnTodos').classList.remove('active');
+    document.getElementById('btnFornoA').classList.remove('active');
+    document.getElementById('btnFornoB').classList.remove('active');
+    document.getElementById('btnFornoC').classList.remove('active');
+    document.getElementById('btnFornoD').classList.remove('active');
+    
+    document.getElementById(`btnForno${forno === 'todos' ? 'Todos' : forno}`).classList.add('active');
+    
+    // Aplicar filtro
     filtrar();
 }
-
-function aplicarEstadoModoCompacto(notificar = true) {
-    const btn = document.getElementById("btnModoCompacto");
-    document.body.classList.toggle("modo-compacto", modoCompactoAtivo);
-
-    if (btn) {
-        btn.classList.toggle("active", modoCompactoAtivo);
-        btn.setAttribute("aria-pressed", String(modoCompactoAtivo));
-        btn.innerHTML = modoCompactoAtivo
-            ? '<i class="fas fa-up-right-and-down-left-from-center"></i> Modo Normal'
-            : '<i class="fas fa-compress-alt"></i> Modo Compacto';
-    }
-
-    if (notificar) {
-        mostrarNotificacao(modoCompactoAtivo ? "Modo compacto ativado" : "Modo compacto desativado", "info");
-    }
-}
-
-function alternarModoCompacto() {
-    modoCompactoAtivo = !modoCompactoAtivo;
-    localStorage.setItem("modoCompacto", String(modoCompactoAtivo));
-    aplicarEstadoModoCompacto(true);
-}
-
-window.alternarModoCompacto = alternarModoCompacto;
 
 // ====================================================
 // FUNÇÃO: ALTERNAR VISUALIZAÇÃO DE CRÍTICOS
@@ -939,16 +981,163 @@ function alternarModoEscuro() {
 // FUNÇÃO: RECARREGAR DADOS
 // ====================================================
 
-function recarregarDados() {
-    db.ref("maquinas").once("value").then(snapshot => {
+function aplicarDadosMaquinas(dados) {
+    if (!dados || typeof dados !== 'object') return false;
+
+    dadosMaquinas = dados;
+    criarPainel(dados);
+
+    if (config.mostrarGraficos) {
+        atualizarGrafico(dados);
+        atualizarGraficoTotal(dados);
+    }
+
+    const ultimaAtualizacao = document.getElementById('ultimaAtualizacao');
+    if (ultimaAtualizacao) {
+        ultimaAtualizacao.textContent = new Date().toLocaleTimeString('pt-BR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
+
+    return true;
+}
+
+
+// ====================================================
+// V19 - SINCRONIZAÇÃO EM TEMPO REAL DOS CARDS
+// ====================================================
+function encontrarBotaoAtualizarDashboard() {
+    const candidates = Array.from(document.querySelectorAll('button, a'));
+    return candidates.find(el => {
+        const text = (el.textContent || '').trim().toLowerCase();
+        const onclick = String(el.getAttribute('onclick') || '').toLowerCase();
+        const id = String(el.id || '').toLowerCase();
+        return onclick.includes('recarregardados') || text.includes('atualizar') || id.includes('atualizar') || id.includes('refresh');
+    });
+}
+
+function agendarAtualizacaoTempoRealMaquinas(dados) {
+    // Renderiza imediatamente com os dados recebidos pelo Firebase.
+    if (dados && typeof dados === 'object') {
+        dadosMaquinas = dados;
+    }
+
+    // Debounce curto para quando o Firebase envia vários eventos em sequência.
+    clearTimeout(window.__wmoldesRealtimeRefreshTimer);
+    window.__wmoldesRealtimeRefreshTimer = setTimeout(() => {
+        try {
+            const dadosAtuais = window.__wmoldesUltimoSnapshotMaquinas || dadosMaquinas;
+            if (dadosAtuais && typeof dadosAtuais === 'object') {
+                aplicarDadosMaquinas(dadosAtuais);
+            }
+
+            // Alguns layouts só atualizam contadores/carrossel por meio da rotina do botão Atualizar.
+            // Aqui disparamos essa rotina automaticamente, mas com trava para não criar loop.
+            if (!window.__wmoldesRealtimeClickingAtualizar) {
+                const btnAtualizar = encontrarBotaoAtualizarDashboard();
+                if (btnAtualizar) {
+                    window.__wmoldesRealtimeClickingAtualizar = true;
+                    btnAtualizar.click();
+                    setTimeout(() => {
+                        window.__wmoldesRealtimeClickingAtualizar = false;
+                    }, 900);
+                } else if (typeof window.recarregarDados === 'function') {
+                    window.recarregarDados(true);
+                }
+            }
+        } catch (error) {
+            console.warn('Não foi possível atualizar os cards em tempo real:', error);
+        }
+    }, 250);
+}
+
+function recarregarDados(silent = false) {
+    if (typeof db === 'undefined' || !db) {
+        console.warn("Firebase Database ainda não está disponível para carregar máquinas.");
+        return Promise.resolve(false);
+    }
+
+    return db.ref("maquinas").once("value").then(snapshot => {
         const dados = snapshot.val();
-        if (dados) {
-            criarPainel(dados);
-            atualizarGrafico(dados);
-            atualizarGraficoTotal(dados);
-            mostrarNotificacao("Dados atualizados com sucesso!", "info");
+        const carregou = aplicarDadosMaquinas(dados);
+
+        if (carregou) {
+            window.__wmoldesMaquinasCarregadas = true;
+            window.__wmoldesUltimoCarregamentoMaquinas = Date.now();
+            if (!silent) {
+                mostrarNotificacao("Dados atualizados com sucesso!", "info");
+            }
+            return true;
+        }
+
+        if (!silent) {
+            mostrarNotificacao("Nenhuma máquina encontrada no Firebase.", "warning");
+        }
+        return false;
+    }).catch(error => {
+        console.error("❌ Erro ao recarregar máquinas:", error);
+        if (!silent) {
+            mostrarNotificacao("Erro ao carregar máquinas do Firebase.", "error");
+        }
+        return false;
+    });
+}
+
+function inicializarCarregamentoAutomaticoMaquinas() {
+    // Carregamento resiliente de abertura.
+    // O botão Atualizar funcionava porque era acionado depois da tela estabilizar;
+    // esta rotina faz tentativas automáticas curtas até o Firebase devolver as máquinas.
+    if (window.__wmoldesAutoLoadStarted) return;
+    window.__wmoldesAutoLoadStarted = true;
+
+    let tentativas = 0;
+    const maxTentativas = 24; // aproximadamente 12 segundos
+
+    const tentarCarregar = () => {
+        tentativas += 1;
+
+        recarregarDados(true).then(carregou => {
+            const total = dadosMaquinas && typeof dadosMaquinas === 'object' ? Object.keys(dadosMaquinas).length : 0;
+
+            if (carregou || total > 0) {
+                window.__wmoldesMaquinasCarregadas = true;
+                return;
+            }
+
+            if (tentativas < maxTentativas) {
+                setTimeout(tentarCarregar, 500);
+            }
+        });
+    };
+
+    // Dispara em vários momentos seguros da abertura.
+    tentarCarregar();
+    setTimeout(tentarCarregar, 300);
+    window.addEventListener('load', () => setTimeout(tentarCarregar, 100));
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && !window.__wmoldesMaquinasCarregadas) {
+            tentarCarregar();
         }
     });
+
+    if (typeof auth !== 'undefined' && auth && typeof auth.onAuthStateChanged === 'function') {
+        auth.onAuthStateChanged(user => {
+            if (user && !window.__wmoldesMaquinasCarregadas) {
+                tentarCarregar();
+            }
+        });
+    }
+
+    // Atualização periódica leve quando a opção do sistema estiver ativa.
+    if (!window.__wmoldesAutoReloadInterval) {
+        window.__wmoldesAutoReloadInterval = setInterval(() => {
+            if (config.autoAtualizar !== false && typeof auth !== 'undefined' && auth && auth.currentUser) {
+                recarregarDados(true);
+            }
+        }, 30000);
+    }
 }
 
 // ====================================================
@@ -1101,7 +1290,6 @@ async function gerarPDF() {
 // ====================================================
 
 function inicializarGraficos() {
-    sincronizarControlesDashboard();
     // Inicializar gráficos vazios
     const ctxProducao = document.getElementById("graficoProducao");
     const ctxTotal = document.getElementById("graficoTotal");
@@ -1153,7 +1341,7 @@ function atualizarGrafico(dados) {
     const funis = maquinas.map(id => dados[id].funil || 0);
 
     graficoProducao.data.labels = maquinas;
-    const datasets = [
+    graficoProducao.data.datasets = [
         {
             label: "Molde",
             data: moldes,
@@ -1167,30 +1355,23 @@ function atualizarGrafico(dados) {
             backgroundColor: "rgba(12, 74, 110, 0.8)",
             borderColor: "rgba(12, 74, 110, 1)",
             borderWidth: 1
-        }
-    ];
-
-    if (mostrarNeckRingDashboard) {
-        datasets.push({
+        },
+        {
             label: "Neck Ring",
             data: neckrings,
             backgroundColor: "rgba(79, 70, 229, 0.8)",
             borderColor: "rgba(79, 70, 229, 1)",
             borderWidth: 1
-        });
-    }
-
-    if (mostrarFunilDashboard) {
-        datasets.push({
+        },
+        {
             label: "Funil",
             data: funis,
             backgroundColor: "rgba(245, 158, 11, 0.8)",
             borderColor: "rgba(245, 158, 11, 1)",
             borderWidth: 1
-        });
-    }
-
-    graficoProducao.data.datasets = datasets;    
+        }
+    ];
+    
     graficoProducao.update();
 }
 
@@ -1217,7 +1398,7 @@ function atualizarGraficoTotal(dados) {
     );
 
     graficoTotal.data.labels = maquinas;
-    const datasets = [
+    graficoTotal.data.datasets = [
         {
             label: "Molde Total",
             data: moldesTotal,
@@ -1231,57 +1412,25 @@ function atualizarGraficoTotal(dados) {
             backgroundColor: "rgba(12, 74, 110, 0.6)",
             borderColor: "rgba(12, 74, 110, 1)",
             borderWidth: 1
-        }
-    ];
-
-    if (mostrarNeckRingDashboard) {
-        datasets.push({
+        },
+        {
             label: "Neck Ring Total",
             data: neckringsTotal,
             backgroundColor: "rgba(79, 70, 229, 0.6)",
             borderColor: "rgba(79, 70, 229, 1)",
             borderWidth: 1
-        });
-    }
-
-    if (mostrarFunilDashboard) {
-        datasets.push({
+        },
+        {
             label: "Funil Total",
             data: funisTotal,
             backgroundColor: "rgba(245, 158, 11, 0.6)",
             borderColor: "rgba(245, 158, 11, 1)",
             borderWidth: 1
-        });
-    }
-
-    graficoTotal.data.datasets = datasets;    
+        }
+    ];
+    
     graficoTotal.update();
 }
-
-
-function sincronizarControlesDashboard() {
-    const neck = document.getElementById('toggleGraficoNeckRing');
-    const funil = document.getElementById('toggleGraficoFunil');
-
-    if (neck) neck.checked = mostrarNeckRingDashboard;
-    if (funil) funil.checked = mostrarFunilDashboard;
-}
-
-function atualizarVisualizacaoDashboard() {
-    const neck = document.getElementById('toggleGraficoNeckRing');
-    const funil = document.getElementById('toggleGraficoFunil');
-
-    mostrarNeckRingDashboard = Boolean(neck?.checked);
-    mostrarFunilDashboard = Boolean(funil?.checked);
-
-    localStorage.setItem('mostrarNeckRingDashboard', String(mostrarNeckRingDashboard));
-    localStorage.setItem('mostrarFunilDashboard', String(mostrarFunilDashboard));
-
-    atualizarGrafico(dadosMaquinas);
-    atualizarGraficoTotal(dadosMaquinas);
-}
-
-window.atualizarVisualizacaoDashboard = atualizarVisualizacaoDashboard;
 
 // ====================================================
 // PAINEL ADMINISTRATIVO
@@ -1356,15 +1505,7 @@ function salvarConfiguracoes() {
     config.autoAtualizar = document.getElementById('autoAtualizar').checked;
     config.mostrarTotais = document.getElementById('mostrarTotais').checked;
     config.mostrarGraficos = document.getElementById('mostrarGraficos').checked;
-    config.estoqueMinimoMolde = Math.max(0, parseInt(document.getElementById('estoqueMinimoMolde').value, 10) || 0);
-    config.estoqueMinimoBlank = Math.max(0, parseInt(document.getElementById('estoqueMinimoBlank').value, 10) || 0);
-    config.estoqueMinimoNeckring = Math.max(0, parseInt(document.getElementById('estoqueMinimoNeckring').value, 10) || 0);
-    config.estoqueMinimoFunil = Math.max(0, parseInt(document.getElementById('estoqueMinimoFunil').value, 10) || 0);
-    config.estoqueMinimo = Math.min(config.estoqueMinimoMolde, config.estoqueMinimoBlank, config.estoqueMinimoNeckring, config.estoqueMinimoFunil);
-    config.criticoMoldeAtivo = document.getElementById('criticoMoldeAtivo').checked;
-    config.criticoBlankAtivo = document.getElementById('criticoBlankAtivo').checked;
-    config.criticoNeckringAtivo = document.getElementById('criticoNeckringAtivo').checked;
-    config.criticoFunilAtivo = document.getElementById('criticoFunilAtivo').checked;
+    config.estoqueMinimo = parseInt(document.getElementById('estoqueMinimo').value) || 3;
     
     // Salvar no Firebase
     setWithAudit("configuracoes", config, {
@@ -1384,7 +1525,7 @@ function salvarConfiguracoes() {
             graficosElement.style.display = config.mostrarGraficos ? 'grid' : 'none';
         }
         
-        atualizarResumoLimitesCriticos();
+        document.getElementById('estoqueMinimoLabel').textContent = config.estoqueMinimo;
         
         if (Object.keys(dadosMaquinas).length > 0) {
             criarPainel(dadosMaquinas);
@@ -1602,27 +1743,54 @@ function toggleModoDigitado(maquinaId, tipo) {
 }
 
 async function atualizarPorInput(maquinaId, tipo, valor) {
+    const writeKey = `${maquinaId}:${tipo}`;
+    if (pendingMachineWrites.has(writeKey)) {
+        return;
+    }
+
     const spanElement = document.getElementById(`${maquinaId}-${tipo}`);
     const inputElement = document.getElementById(`input-${maquinaId}-${tipo}`);
     const btnElement = inputElement.closest('.controles').querySelector('.btn-digitado');
-    const valorAtual = parseInt(spanElement.textContent) || 0;
-    const novoValor = Math.max(0, parseInt(valor, 10) || 0);
 
+    const valorAtual = parseInt(spanElement.textContent) || 0;
+    const novoValor = Math.max(0, parseInt(valor) || 0);
+
+    // Atualizar visualmente
     spanElement.textContent = novoValor;
     inputElement.value = novoValor;
+
+    // Voltar para modo visual
     spanElement.style.display = 'block';
     inputElement.style.display = 'none';
     btnElement.innerHTML = '<i class="fas fa-keyboard"></i>';
     btnElement.classList.remove('ativo-digitacao');
 
+    if (novoValor === valorAtual) {
+        return;
+    }
+
+    pendingMachineWrites.add(writeKey);
+
     try {
-        if (window.WMHistory && typeof WMHistory.setFieldAndSnapshot === 'function') {
-            await WMHistory.setFieldAndSnapshot(maquinaId, tipo, novoValor, {
-                origem: 'abastecedor_digitacao',
-                field: tipo
+        if (typeof setWithAudit === 'function') {
+            await setWithAudit(`maquinas/${maquinaId}/${tipo}`, novoValor, {
+                action: `digitou valor em ${tipo} da máquina ${maquinaId}`,
+                details: `Valor ajustado manualmente de ${valorAtual} para ${novoValor}.`,
+                entityType: 'machine_change',
+                entityId: maquinaId,
+                extra: {
+                    machineId: maquinaId,
+                    field: tipo,
+                    origem: 'digitacao_manual',
+                    before: valorAtual,
+                    after: novoValor
+                }
             });
         } else {
             await db.ref(`maquinas/${maquinaId}/${tipo}`).set(novoValor);
+        }
+        if (window.WMHistory && typeof WMHistory.saveSnapshotFromFirebase === 'function') {
+            await WMHistory.saveSnapshotFromFirebase(maquinaId, { origem: 'digitacao_manual', field: tipo, source: 'input_manual' });
         }
     } catch (error) {
         console.error('❌ Erro ao atualizar valor digitado:', error);
@@ -1630,8 +1798,11 @@ async function atualizarPorInput(maquinaId, tipo, valor) {
         inputElement.value = valorAtual;
         mostrarNotificacao(`Erro ao salvar ${tipo} da máquina ${maquinaId}.`, 'error');
         return;
+    } finally {
+        pendingMachineWrites.delete(writeKey);
     }
 
+    // Feedback
     spanElement.style.transform = 'scale(1.1)';
     spanElement.style.color = '#0ea5e9';
     setTimeout(() => {
@@ -1639,7 +1810,7 @@ async function atualizarPorInput(maquinaId, tipo, valor) {
         spanElement.style.color = '';
     }, 200);
 
-    mostrarNotificacao(`${tipo.charAt(0).toUpperCase() + tipo.slice(1)} da máquina ${maquinaId} atualizado para ${novoValor}`, "info");
+    mostrarNotificacao(`${tipo.charAt(0).toUpperCase() + tipo.slice(1)} da máquina ${maquinaId} atualizado para ${novoValor}`, 'info');
 }
 
 // Exportar as novas funções
@@ -1650,6 +1821,271 @@ window.atualizarPorInput = atualizarPorInput;
 window.mostrarNotificacao = mostrarNotificacao;
 
 console.log("✅ Script principal carregado");
+
+
+// ====================================================
+// V18 - CARREGAMENTO AUTOMÁTICO REAL NA ABERTURA
+// ====================================================
+// Algumas versões do dashboard só renderizam os cartões depois que o botão
+// "Atualizar" executa a rotina completa de refresh. Esta camada replica esse
+// comportamento automaticamente na abertura, sem depender de clique manual.
+(function setupAutoRefreshOnPageOpen() {
+    if (window.__wmoldesAutoRefreshV18Started) return;
+    window.__wmoldesAutoRefreshV18Started = true;
+
+    function getMachineCardCount() {
+        const selectors = [
+            '#painel .maquina-card',
+            '#painel .machine-card',
+            '#painel .card-maquina',
+            '.maquinas-grid .maquina-card',
+            '.maquinas-grid .machine-card',
+            '.maquinas-grid .card-maquina',
+            '[data-machine-id]',
+            '[data-maquina-id]'
+        ];
+
+        for (const selector of selectors) {
+            const count = document.querySelectorAll(selector).length;
+            if (count > 0) return count;
+        }
+
+        const painel = document.getElementById('painel') || document.querySelector('.maquinas-grid');
+        if (painel && painel.children && painel.children.length > 0) return painel.children.length;
+
+        return 0;
+    }
+
+    function findUpdateButton() {
+        const candidates = Array.from(document.querySelectorAll('button, a'));
+        return candidates.find(el => {
+            const text = (el.textContent || '').trim().toLowerCase();
+            const onclick = String(el.getAttribute('onclick') || '').toLowerCase();
+            const id = String(el.id || '').toLowerCase();
+            return onclick.includes('recarregardados') || text.includes('atualizar') || id.includes('atualizar') || id.includes('refresh');
+        });
+    }
+
+    async function runRefreshAttempt(source) {
+        try {
+            if (getMachineCardCount() > 0) {
+                window.__wmoldesAutoRefreshV18Done = true;
+                return true;
+            }
+
+            if (typeof window.recarregarDados === 'function') {
+                const result = await window.recarregarDados(true);
+                if (result || getMachineCardCount() > 0) {
+                    window.__wmoldesAutoRefreshV18Done = true;
+                    return true;
+                }
+            }
+
+            // Fallback: executa exatamente a mesma ação do botão que funciona manualmente.
+            const updateButton = findUpdateButton();
+            if (updateButton && !window.__wmoldesAutoRefreshV18Clicking) {
+                window.__wmoldesAutoRefreshV18Clicking = true;
+                updateButton.click();
+                setTimeout(() => { window.__wmoldesAutoRefreshV18Clicking = false; }, 700);
+            }
+
+            setTimeout(() => {
+                if (getMachineCardCount() > 0) {
+                    window.__wmoldesAutoRefreshV18Done = true;
+                }
+            }, 500);
+
+            return getMachineCardCount() > 0;
+        } catch (error) {
+            console.warn('Auto refresh V18 não conseguiu carregar nesta tentativa:', source, error);
+            return false;
+        }
+    }
+
+    function scheduleAttempts() {
+        const delays = [150, 500, 1000, 1800, 3000, 5000, 8000, 12000, 18000];
+        delays.forEach(delay => {
+            setTimeout(() => {
+                if (!window.__wmoldesAutoRefreshV18Done) {
+                    runRefreshAttempt(`delay-${delay}`);
+                }
+            }, delay);
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', scheduleAttempts, { once: true });
+    } else {
+        scheduleAttempts();
+    }
+
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            if (!window.__wmoldesAutoRefreshV18Done) runRefreshAttempt('window-load');
+        }, 300);
+    });
+
+    if (typeof auth !== 'undefined' && auth && typeof auth.onAuthStateChanged === 'function') {
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                setTimeout(() => runRefreshAttempt('auth-ready'), 300);
+                setTimeout(() => runRefreshAttempt('auth-ready-late'), 1500);
+            }
+        });
+    }
+})();
+
+
+// V19 - Exposição segura para rotinas automáticas e botões inline
+try {
+    window.recarregarDados = recarregarDados;
+    window.aplicarDadosMaquinas = aplicarDadosMaquinas;
+} catch (error) {
+    console.warn('Não foi possível expor funções de atualização:', error);
+}
+
+// ====================================================
+// V20 - SINCRONIZAÇÃO REAL COM O BANCO DE DADOS
+// ====================================================
+// Este bloco garante que alterações feitas por outro site diretamente no
+// Firebase Realtime Database sejam refletidas no painel sem clicar em Atualizar.
+// Usa listeners em /maquinas e, como redundância, uma verificação curta por
+// polling enquanto a página está aberta.
+(function setupSincronizacaoBancoTempoRealV20() {
+    if (window.__wmoldesRealtimeDBV20Started) return;
+    window.__wmoldesRealtimeDBV20Started = true;
+
+    let lastSignature = '';
+    let isRefreshing = false;
+    let debounceTimer = null;
+
+    function assinatura(dados) {
+        try {
+            return JSON.stringify(dados || {});
+        } catch (error) {
+            return String(Date.now());
+        }
+    }
+
+    async function atualizarDoBanco(origem = 'tempo-real') {
+        if (isRefreshing) return false;
+        if (typeof db === 'undefined' || !db) return false;
+
+        isRefreshing = true;
+        try {
+            const snapshot = await db.ref('maquinas').once('value');
+            const dados = snapshot.val() || {};
+            const sig = assinatura(dados);
+
+            if (sig !== lastSignature || origem === 'forcar') {
+                lastSignature = sig;
+                window.__wmoldesUltimoSnapshotMaquinas = dados;
+                dadosMaquinas = dados;
+
+                if (typeof aplicarDadosMaquinas === 'function') {
+                    aplicarDadosMaquinas(dados);
+                } else if (typeof criarPainel === 'function') {
+                    criarPainel(dados);
+                }
+
+                if (typeof atualizarEstatisticasDashboard === 'function') {
+                    try { atualizarEstatisticasDashboard(dados); } catch (_) {}
+                }
+
+                const ultimaAtualizacao = document.getElementById('ultimaAtualizacao');
+                if (ultimaAtualizacao) {
+                    ultimaAtualizacao.textContent = new Date().toLocaleTimeString('pt-BR', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+                }
+            }
+
+            return true;
+        } catch (error) {
+            console.warn('V20: não foi possível sincronizar máquinas em tempo real:', origem, error);
+            return false;
+        } finally {
+            isRefreshing = false;
+        }
+    }
+
+    function agendarAtualizacao(origem) {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => atualizarDoBanco(origem), 120);
+    }
+
+    function iniciarListeners() {
+        if (typeof db === 'undefined' || !db) {
+            setTimeout(iniciarListeners, 400);
+            return;
+        }
+
+        if (window.__wmoldesRealtimeDBV20ListenersAttached) return;
+        window.__wmoldesRealtimeDBV20ListenersAttached = true;
+
+        const ref = db.ref('maquinas');
+
+        ref.on('value', snapshot => {
+            const dados = snapshot.val() || {};
+            const sig = assinatura(dados);
+            if (sig !== lastSignature) {
+                lastSignature = sig;
+                window.__wmoldesUltimoSnapshotMaquinas = dados;
+                dadosMaquinas = dados;
+                if (typeof aplicarDadosMaquinas === 'function') {
+                    aplicarDadosMaquinas(dados);
+                } else if (typeof criarPainel === 'function') {
+                    criarPainel(dados);
+                }
+            }
+        }, error => {
+            console.warn('V20: listener /maquinas/value falhou:', error);
+        });
+
+        ref.on('child_added', () => agendarAtualizacao('child_added'));
+        ref.on('child_changed', () => agendarAtualizacao('child_changed'));
+        ref.on('child_removed', () => agendarAtualizacao('child_removed'));
+
+        // Primeira sincronização imediata.
+        atualizarDoBanco('forcar');
+    }
+
+    function iniciarPollingRedundante() {
+        if (window.__wmoldesRealtimeDBV20Polling) return;
+        window.__wmoldesRealtimeDBV20Polling = setInterval(() => {
+            if (!document.hidden) atualizarDoBanco('polling');
+        }, 2500);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            iniciarListeners();
+            iniciarPollingRedundante();
+        }, { once: true });
+    } else {
+        iniciarListeners();
+        iniciarPollingRedundante();
+    }
+
+    window.addEventListener('focus', () => atualizarDoBanco('forcar'));
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) atualizarDoBanco('forcar');
+    });
+
+    if (typeof auth !== 'undefined' && auth && typeof auth.onAuthStateChanged === 'function') {
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                iniciarListeners();
+                atualizarDoBanco('auth');
+            }
+        });
+    }
+
+    // Deixa disponível para teste no console: window.sincronizarMaquinasAgora()
+    window.sincronizarMaquinasAgora = () => atualizarDoBanco('forcar');
+})();
 
 
 // ====================================================
