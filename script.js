@@ -357,6 +357,60 @@ function inicializarFirebaseListeners() {
 }
 
 // ====================================================
+
+
+// ====================================================
+// METADADOS COMPACTOS DO CARD (HORÁRIO ATUAL / ÚLTIMA ATUALIZAÇÃO)
+// ====================================================
+function wmFormatarHoraCard(timestamp) {
+    const n = Number(timestamp || 0);
+    if (!n) return '--:--';
+    try {
+        return new Intl.DateTimeFormat('pt-BR', {
+            timeZone: 'America/Sao_Paulo',
+            hour: '2-digit',
+            minute: '2-digit'
+        }).format(new Date(n));
+    } catch (e) {
+        const d = new Date(n);
+        return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+}
+
+function wmObterUltimaAtualizacaoMaquina(maquina) {
+    if (!maquina) return 0;
+    return Number(
+        maquina.updatedAt ||
+        maquina.updatedServerAt ||
+        maquina.lastUpdated ||
+        maquina.lastUpdate ||
+        maquina.ultimaAtualizacao ||
+        maquina.timestamp ||
+        maquina.createdAt ||
+        0
+    );
+}
+
+function wmRenderCardTimeMeta(maquina) {
+    const ultima = wmObterUltimaAtualizacaoMaquina(maquina);
+    return `
+        <div class="wm-card-time-meta" title="Horário atual e última atualização da máquina">
+            <div><span>Atual</span><strong class="wm-current-time" data-wm-current-time="1">${wmFormatarHoraCard(Date.now())}</strong></div>
+            <div><span>Última</span><strong>${wmFormatarHoraCard(ultima)}</strong></div>
+        </div>`;
+}
+
+function wmAtualizarHorariosAtuaisCards() {
+    document.querySelectorAll('[data-wm-current-time="1"]').forEach(el => {
+        el.textContent = wmFormatarHoraCard(Date.now());
+    });
+}
+
+if (!window.__wmCardClockStarted) {
+    window.__wmCardClockStarted = true;
+    setInterval(wmAtualizarHorariosAtuaisCards, 30000);
+}
+
 // FUNÇÃO: CRIAR PAINEL DE MÁQUINAS
 // ====================================================
 
@@ -414,8 +468,8 @@ function criarPainel(maquinas) {
                     <button
                         type="button"
                         class="maquina-id maquina-id-clickable ${maquinaAmostra ? "ativa" : ""}"
-                        onclick="alternarMaquinaAmostra('${id}')"
-                        title="Marcar ou desmarcar ${id} como máquina amostra"
+                        onclick="wmAbrirModalMaquinaDashboard('${id}')"
+                        title="Abrir histórico rápido da máquina ${id}"
                         aria-pressed="${maquinaAmostra}">
                         <i class="fas fa-industry"></i>
                         <span class="maquina-texto">Máquina</span><span class="maquina-codigo">${id}</span>
@@ -471,6 +525,8 @@ function criarPainel(maquinas) {
                         </div>
                     </div>`;
         }
+
+        maquinaHTML += wmRenderCardTimeMeta(m);
 
         maquinaHTML += `
                 </div>`;

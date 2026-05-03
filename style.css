@@ -2308,3 +2308,170 @@ body.access-page { min-height: 100vh; overflow-x: hidden; background: radial-gra
     box-shadow: var(--shadow-md, 0 6px 14px rgba(15, 23, 42, .16));
 }
 .prefix-add-btn:active { transform: translateY(0); }
+
+/* WMoldes V8 - horário compacto no card e modal rápido por máquina */
+.maquina-header { align-items: flex-start; gap: 10px; }
+.maquina-id-clickable { cursor: pointer; }
+.maquina-id-clickable:hover .maquina-codigo,
+.maquina-id-clickable:focus-visible .maquina-codigo { text-decoration: underline; }
+.wm-card-time-meta {
+    margin-left: auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3px;
+    min-width: 82px;
+    padding: 5px 7px;
+    border: 1px solid rgba(37, 99, 235, .14);
+    border-radius: 10px;
+    background: rgba(248, 250, 252, .88);
+    color: #64748b;
+    font-size: 9px;
+    line-height: 1.1;
+    text-align: right;
+}
+.wm-card-time-meta span { display: inline-block; margin-right: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+.wm-card-time-meta strong { color: #0f172a; font-size: 11px; font-weight: 800; }
+
+.wm-machine-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, .58);
+    backdrop-filter: blur(6px);
+}
+.wm-machine-modal-overlay.open { display: flex; }
+.wm-machine-modal-card {
+    position: relative;
+    width: min(1120px, 96vw);
+    max-height: 92vh;
+    overflow: auto;
+    background: #fff;
+    border: 1px solid rgba(148, 163, 184, .35);
+    border-radius: 22px;
+    box-shadow: 0 30px 80px rgba(15, 23, 42, .28);
+}
+.wm-machine-modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 38px;
+    height: 38px;
+    border: 1px solid #dbeafe;
+    border-radius: 12px;
+    background: #f8fafc;
+    color: #334155;
+    cursor: pointer;
+}
+.wm-machine-modal-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 28px 70px 22px 28px;
+    border-bottom: 1px solid #e2e8f0;
+}
+.wm-machine-modal-header h2 { margin: 0 0 6px; color: #0f172a; font-size: 24px; }
+.wm-machine-modal-header p { margin: 0; color: #64748b; }
+.wm-machine-modal-summary {
+    display: grid;
+    align-content: center;
+    justify-items: end;
+    color: #64748b;
+}
+.wm-machine-modal-summary strong { color: #2563eb; font-size: 24px; line-height: 1; }
+.wm-machine-modal-summary span { font-weight: 700; }
+.wm-machine-modal-summary small { margin-top: 4px; }
+.wm-machine-modal-filters {
+    display: flex;
+    align-items: end;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 18px 28px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+}
+.wm-machine-modal-filters label {
+    display: grid;
+    gap: 6px;
+    color: #475569;
+    font-weight: 800;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+.wm-machine-modal-filters input[type="date"] {
+    height: 42px;
+    min-width: 170px;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 0 12px;
+    font-size: 14px;
+    color: #0f172a;
+    background: #fff;
+}
+.wm-machine-periods {
+    display: flex;
+    border: 1px solid #dbeafe;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #fff;
+}
+.wm-machine-periods button {
+    min-width: 96px;
+    border: 0;
+    border-right: 1px solid #e2e8f0;
+    background: #fff;
+    color: #0f172a;
+    padding: 10px 12px;
+    font-weight: 800;
+    cursor: pointer;
+}
+.wm-machine-periods button:last-child { border-right: 0; }
+.wm-machine-periods button small { display: block; margin-top: 3px; color: #64748b; font-size: 10px; font-weight: 700; }
+.wm-machine-periods button.active {
+    background: #2563eb;
+    color: #fff;
+}
+.wm-machine-periods button.active small { color: rgba(255,255,255,.86); }
+.wm-machine-apply {
+    height: 42px;
+    border: 0;
+    border-radius: 12px;
+    background: #2563eb;
+    color: #fff;
+    padding: 0 18px;
+    font-weight: 800;
+    cursor: pointer;
+}
+.wm-machine-modal-chart-wrap {
+    position: relative;
+    height: 360px;
+    margin: 24px 28px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    padding: 18px;
+    background: #fff;
+}
+.wm-machine-modal-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    font-weight: 800;
+    background: rgba(255,255,255,.72);
+    border-radius: 18px;
+}
+.wm-machine-modal-table-wrap { margin: 0 28px 28px; overflow: auto; border: 1px solid #e2e8f0; border-radius: 16px; }
+.wm-machine-modal-table-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.wm-machine-modal-table-wrap th,
+.wm-machine-modal-table-wrap td { padding: 11px 14px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+.wm-machine-modal-table-wrap th { background: #f8fafc; color: #475569; text-transform: uppercase; font-size: 11px; }
+@media (max-width: 760px) {
+    .wm-machine-modal-header { flex-direction: column; padding-right: 70px; }
+    .wm-machine-periods { width: 100%; overflow-x: auto; }
+    .wm-card-time-meta { min-width: 74px; font-size: 8px; }
+}
