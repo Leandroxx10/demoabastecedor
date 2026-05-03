@@ -30,6 +30,7 @@ const comentariosRef = db.ref("comentarios");
 const imagensRef = db.ref("imagens");
 const adminConfigRef = db.ref("adminConfig");
 const manutencaoRef = db.ref("manutencao");
+const manutencoesRef = db.ref("manutencoes");
 const configuracoesRef = db.ref("configuracoes");
 const usersRef = db.ref("users");
 const logsRef = db.ref("logs");
@@ -86,40 +87,123 @@ async function saveMachineLimits(machineId, limits) {
 // Definir status de manutenção da máquina
 async function setMachineMaintenance(machineId, isInMaintenance, reason = "") {
     console.log(`🔧 Definindo manutenção para ${machineId}: ${isInMaintenance}, motivo: "${reason}"`);
-    
-    return new Promise((resolve, reject) => {
+
+    machineId = String(machineId || '').trim();
+    if (!machineId) throw new Error('Máquina inválida para manutenção.');
+
+    const nowMs = Date.now();
+    const user = (firebase.auth && firebase.auth().currentUser) ? firebase.auth().currentUser : null;
+    const usuario = user ? (user.email || user.uid || 'Administrador') : 'Administrador';
+
+    try {
         if (isInMaintenance) {
-            // Colocar em manutenção
+            // Evita abrir duas manutenções ativas para a mesma máquina.
+            const currentSnap = await manutencaoRef.child(machineId).once("value");
+            const current = currentSnap.val();
+            if (current && current.isInMaintenance === true && current.activeEventId) {
+                const updateData = {
+                    isInMaintenance: true,
+                    reason: reason || current.reason || '',
+                    updatedAt: nowMs,
+                    updatedServerAt: firebase.database.ServerValue.TIMESTAMP,
+                    updatedBy: usuario,
+                    activeEventId: current.activeEventId
+                };
+                await manutencaoRef.child(machineId).update(updateData);
+                await manutencoesRef.child(machineId).child(current.activeEventId).update({
+                    motivo: updateData.reason,
+                    reason: updateData.reason,
+                    updatedAt: nowMs,
+                    updatedServerAt: firebase.database.ServerValue.TIMESTAMP,
+                    updatedBy: usuario
+                });
+                console.log(`✅ Manutenção já ativa para ${machineId}; motivo atualizado`);
+                return true;
+            }
+
+            const eventRef = manutencoesRef.child(machineId).push();
             const maintenanceData = {
                 isInMaintenance: true,
-                reason: reason,
-                startedAt: Date.now(),
-                startedBy: 'Administrador',
-                updatedAt: Date.now()
+                reason: reason || '',
+                startedAt: nowMs,
+                startedServerAt: firebase.database.ServerValue.TIMESTAMP,
+                startedBy: usuario,
+                updatedAt: nowMs,
+                updatedServerAt: firebase.database.ServerValue.TIMESTAMP,
+                activeEventId: eventRef.key
             };
-            
-            manutencaoRef.child(machineId).set(maintenanceData)
-                .then(() => {
-                    console.log(`✅ Máquina ${machineId} colocada em manutenção`);
-                    resolve(true);
-                })
-                .catch(error => {
-                    console.error(`❌ Erro ao colocar máquina ${machineId} em manutenção:`, error);
-                    reject(error);
-                });
-        } else {
-            // Retirar da manutenção
-            manutencaoRef.child(machineId).remove()
-                .then(() => {
-                    console.log(`✅ Máquina ${machineId} retirada da manutenção`);
-                    resolve(true);
-                })
-                .catch(error => {
-                    console.error(`❌ Erro ao retirar máquina ${machineId} da manutenção:`, error);
-                    reject(error);
-                });
+            const eventData = {
+                id: eventRef.key,
+                machineId,
+                tipo: 'manutencao',
+                status: 'ativa',
+                label: 'Parada para manutenção',
+                motivo: reason || '',
+                reason: reason || '',
+                startedAt: nowMs,
+                inicio: nowMs,
+                startedServerAt: firebase.database.ServerValue.TIMESTAMP,
+                startedBy: usuario,
+                createdAt: firebase.database.ServerValue.TIMESTAMP,
+                updatedAt: nowMs,
+                updatedServerAt: firebase.database.ServerValue.TIMESTAMP
+            };
+
+            const updates = {};
+            updates[`manutencao/${machineId}`] = maintenanceData;
+            updates[`manutencoes/${machineId}/${eventRef.key}`] = eventData;
+            await db.ref().update(updates);
+            console.log(`✅ Máquina ${machineId} colocada em manutenção com evento ${eventRef.key}`);
+            return true;
         }
-    });
+
+        // Finalizar manutenção ativa e manter o histórico do intervalo.
+        const currentSnap = await manutencaoRef.child(machineId).once("value");
+        const current = currentSnap.val() || {};
+        const activeEventId = current.activeEventId;
+        const startedAt = Number(current.startedAt || current.inicio || nowMs);
+
+        const updates = {};
+        if (activeEventId) {
+            updates[`manutencoes/${machineId}/${activeEventId}/status`] = 'finalizada';
+            updates[`manutencoes/${machineId}/${activeEventId}/endedAt`] = nowMs;
+            updates[`manutencoes/${machineId}/${activeEventId}/fim`] = nowMs;
+            updates[`manutencoes/${machineId}/${activeEventId}/endedServerAt`] = firebase.database.ServerValue.TIMESTAMP;
+            updates[`manutencoes/${machineId}/${activeEventId}/endedBy`] = usuario;
+            updates[`manutencoes/${machineId}/${activeEventId}/durationMs`] = Math.max(0, nowMs - startedAt);
+            updates[`manutencoes/${machineId}/${activeEventId}/updatedAt`] = nowMs;
+            updates[`manutencoes/${machineId}/${activeEventId}/updatedServerAt`] = firebase.database.ServerValue.TIMESTAMP;
+        } else if (current.isInMaintenance) {
+            // Compatibilidade: havia manutenção ativa no nó antigo, mas sem activeEventId.
+            const eventRef = manutencoesRef.child(machineId).push();
+            updates[`manutencoes/${machineId}/${eventRef.key}`] = {
+                id: eventRef.key,
+                machineId,
+                tipo: 'manutencao',
+                status: 'finalizada',
+                label: 'Parada para manutenção',
+                motivo: current.reason || reason || '',
+                reason: current.reason || reason || '',
+                startedAt,
+                inicio: startedAt,
+                endedAt: nowMs,
+                fim: nowMs,
+                durationMs: Math.max(0, nowMs - startedAt),
+                startedBy: current.startedBy || 'Administrador',
+                endedBy: usuario,
+                createdAt: firebase.database.ServerValue.TIMESTAMP,
+                updatedAt: nowMs,
+                updatedServerAt: firebase.database.ServerValue.TIMESTAMP
+            };
+        }
+        updates[`manutencao/${machineId}`] = null;
+        await db.ref().update(updates);
+        console.log(`✅ Máquina ${machineId} retirada da manutenção`);
+        return true;
+    } catch (error) {
+        console.error(`❌ Erro ao alterar manutenção da máquina ${machineId}:`, error);
+        throw error;
+    }
 }
 
 // Obter status de manutenção da máquina
@@ -408,6 +492,7 @@ window.comentariosRef = comentariosRef;
 window.imagensRef = imagensRef;
 window.adminConfigRef = adminConfigRef;
 window.manutencaoRef = manutencaoRef;
+window.manutencoesRef = manutencoesRef;
 window.configuracoesRef = configuracoesRef;
 window.usersRef = usersRef;
 window.logsRef = logsRef;

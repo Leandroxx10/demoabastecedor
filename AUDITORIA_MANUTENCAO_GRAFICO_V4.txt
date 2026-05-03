@@ -1,0 +1,14 @@
+V4 - Faixas de manutenção no gráfico
+
+Implementado:
+- Ao colocar uma máquina em manutenção, o sistema cria um evento em /manutencoes/{maquina}/{idEvento}.
+- Ao retirar a máquina da manutenção, o mesmo evento é finalizado com endedAt/fim e durationMs.
+- O status atual continua em /manutencao/{maquina}, para não quebrar telas existentes.
+- O painel administrativo agora lê /manutencoes e desenha uma faixa âmbar no gráfico do histórico.
+- A faixa usa o intervalo real de início e fim e exibe o texto "Parada para manutenção" no meio.
+- Se houver motivo informado, ele aparece junto ao texto.
+- Se não houver produção durante a parada, o gráfico ainda mostra o intervalo de manutenção.
+
+Validação:
+- node --check history-charts.js
+- node --check firebase-config.js
