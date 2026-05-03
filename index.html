@@ -10,6 +10,7 @@
     <meta name="theme-color" content="#0ea5e9">
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="atalhos.css?v=20260503v13">
+    <link rel="stylesheet" href="wm-fullscreen-toggle.css?v=20260503v14">
 </head>
 <body>
     <div class="background-shapes">
@@ -207,6 +208,10 @@
             <button type="button" id="btnAtalhosRapidos" class="shortcut-top-btn" onclick="window.WMAtalhos && window.WMAtalhos.abrirModal()">
                 <i class="fas fa-bolt"></i> Atalhos
             </button>
+
+            <button type="button" id="btnTelaCheia" class="fullscreen-top-btn" onclick="window.WMFullscreen && window.WMFullscreen.toggle()" title="Abrir ou sair da tela cheia">
+                <i class="fas fa-expand"></i> Tela cheia
+            </button>
             
             <div class="button-group">
                 <button id="btnCriticos" onclick="alternarCriticos()">
@@ -392,6 +397,7 @@
     <script src="script.js?v=20260503v12"></script>
     <script src="dashboard-machine-modal.js?v=20260503v12"></script>
     <script src="atalhos.js?v=20260503v13"></script>
+    <script src="wm-fullscreen-toggle.js?v=20260503v14"></script>
     <script src="pwa-register.js"></script>
 </body>
 </html>

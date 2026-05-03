@@ -1,0 +1,40 @@
+/* WMoldes - ajustes da barra superior e botão Tela Cheia V14 */
+.top-bar {
+  justify-content: flex-start;
+}
+
+.search-container {
+  flex: 0 1 310px;
+  max-width: 310px;
+  min-width: 260px;
+}
+
+.top-bar input#filtro {
+  font-size: 0.95rem;
+  min-height: 44px;
+}
+
+.top-bar button.fullscreen-top-btn {
+  background: linear-gradient(135deg, #0f172a, #334155);
+  color: #fff;
+  border-color: rgba(15, 23, 42, 0.18);
+  white-space: nowrap;
+}
+
+.top-bar button.fullscreen-top-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.22);
+}
+
+.top-bar button.fullscreen-top-btn.is-fullscreen {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border-color: rgba(239, 68, 68, 0.22);
+}
+
+@media (max-width: 768px) {
+  .search-container {
+    flex: 1 1 100%;
+    max-width: none;
+    min-width: 0;
+  }
+}
