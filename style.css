@@ -2678,3 +2678,8 @@ body.access-page { min-height: 100vh; overflow-x: hidden; background: radial-gra
     right: 10px !important;
   }
 }
+
+
+/* WM V19 - remover texto Máquina dos cards de lançamento */
+.maquina-id .maquina-texto{display:none!important;}
+.maquina-id .maquina-codigo{margin-left:0!important;}

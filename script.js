@@ -490,7 +490,7 @@ function criarPainel(maquinas) {
                         title="1 clique: amostra | 2 cliques: gráfico da máquina ${id}"
                         aria-pressed="${maquinaAmostra}">
                         <i class="fas fa-industry"></i>
-                        <span class="maquina-texto">Máquina</span><span class="maquina-codigo">${id}</span>
+                        <span class="maquina-codigo">${id}</span>
                     </button>`;
 
         if (config.mostrarPrefixo) {
