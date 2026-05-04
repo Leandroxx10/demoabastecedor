@@ -2683,3 +2683,45 @@ body.access-page { min-height: 100vh; overflow-x: hidden; background: radial-gra
 /* WM V19 - remover texto Máquina dos cards de lançamento */
 .maquina-id .maquina-texto{display:none!important;}
 .maquina-id .maquina-codigo{margin-left:0!important;}
+
+
+/* WMoldes V20 - ajuste dos horários do card e eixo do gráfico no modal */
+.machine-card .wm-card-time-meta, .wm-card-time-meta {
+  min-width: 72px !important;
+  padding: 4px 6px !important;
+  font-size: 8px !important;
+  line-height: 1.12 !important;
+}
+.machine-card .wm-card-time-meta span, .wm-card-time-meta span {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  margin-right: 2px !important;
+}
+.machine-card .wm-card-time-meta strong, .wm-card-time-meta strong {
+  font-size: 10px !important;
+}
+.wm-machine-modal-chart-wrap {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  padding-bottom: 12px !important;
+}
+.wm-machine-modal-chart-scroll {
+  min-height: 390px !important;
+}
+#wmMachineModalChart {
+  display: block !important;
+}
+@media (max-width: 760px) {
+  .wm-machine-modal-chart-wrap {
+    max-width: 100% !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .wm-machine-modal-chart-scroll {
+    min-width: 980px !important;
+    height: 450px !important;
+  }
+  .machine-card .wm-card-time-meta, .wm-card-time-meta {
+    min-width: 68px !important;
+    font-size: 7.5px !important;
+  }
+}

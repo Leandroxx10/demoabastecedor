@@ -413,8 +413,8 @@ function wmRenderCardTimeMeta(maquina) {
     const ultima = wmObterUltimaAtualizacaoMaquina(maquina);
     return `
         <div class="wm-card-time-meta" title="Horário atual e última atualização da máquina">
-            <div><span>Atual</span><strong class="wm-current-time" data-wm-current-time="1">${wmFormatarHoraCard(Date.now())}</strong></div>
-            <div><span>Última</span><strong>${wmFormatarHoraCard(ultima)}</strong></div>
+            <div><span>Hora</span><strong class="wm-current-time" data-wm-current-time="1">${wmFormatarHoraCard(Date.now())}</strong></div>
+            <div><span>Atualizado</span><strong>${wmFormatarHoraCard(ultima)}</strong></div>
         </div>`;
 }
 

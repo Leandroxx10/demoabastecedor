@@ -21,6 +21,11 @@
     return `${o.year}-${o.month}-${o.day}`;
   }
   function brFromISO(iso){ const [y,m,d]=String(iso||'').split('-'); return y&&m&&d ? `${d}/${m}/${y}` : ''; }
+  function formatChartLabel(row){
+    const hora = String(row?.hora || '').slice(0,5);
+    const data = String(row?.data || '').slice(0,5);
+    return data ? `${hora} (${data})` : hora;
+  }
   function addDaysISO(iso, days){ const d = new Date(`${iso}T12:00:00-03:00`); d.setDate(d.getDate()+days); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
   function msFromISOTime(iso, time){ return new Date(`${iso}T${time}:00-03:00`).getTime(); }
   function rangeFor(iso, period){
@@ -216,7 +221,7 @@
     if (chartWrap) chartWrap.scrollLeft = 0;
     chart = new Chart(canvas.getContext('2d'), {
       type: 'line',
-      data: { labels: rows.map(r => `${r.hora} (${String(r.data||'').slice(0,5)})`), datasets: [
+      data: { labels: rows.map(formatChartLabel), datasets: [
         { label:'Moldes', data:rows.map(r=>r.molde), borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,.08)', tension:.25, fill:false },
         { label:'Blanks', data:rows.map(r=>r.blank), borderColor:'#475569', backgroundColor:'rgba(71,85,105,.08)', tension:.25, fill:false },
         { label:'Neck Rings', data:rows.map(r=>r.neck_ring), borderColor:'#d97706', backgroundColor:'rgba(217,119,6,.08)', tension:.25, fill:false, hidden:true },
@@ -225,10 +230,25 @@
       options: {
         responsive:true,
         maintainAspectRatio:false,
+        layout: { padding: { bottom: 20, left: 4, right: 8, top: 4 } },
         plugins:{ legend:{ position:'top', labels:{ boxWidth: 28 } } },
         scales:{
-          x:{ ticks:{ maxRotation: window.matchMedia && window.matchMedia('(max-width: 760px)').matches ? 55 : 0, minRotation: window.matchMedia && window.matchMedia('(max-width: 760px)').matches ? 55 : 0, autoSkip: false } },
-          y:{ beginAtZero:true }
+          x:{
+            display: true,
+            offset: true,
+            ticks:{
+              display: true,
+              color: '#334155',
+              font: { size: window.matchMedia && window.matchMedia('(max-width: 760px)').matches ? 11 : 12, weight: '600' },
+              padding: 8,
+              maxRotation: window.matchMedia && window.matchMedia('(max-width: 760px)').matches ? 55 : 0,
+              minRotation: window.matchMedia && window.matchMedia('(max-width: 760px)').matches ? 55 : 0,
+              autoSkip: false,
+              callback: function(value, index){ return this.getLabelForValue(value) || (this.chart.data.labels[index] || ''); }
+            },
+            grid: { color: 'rgba(148,163,184,.28)' }
+          },
+          y:{ beginAtZero:true, ticks:{ color:'#334155', padding: 6 }, grid:{ color:'rgba(148,163,184,.28)' } }
         }
       }
     });
