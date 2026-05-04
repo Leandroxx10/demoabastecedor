@@ -2601,3 +2601,80 @@ body.access-page { min-height: 100vh; overflow-x: hidden; background: radial-gra
     -webkit-overflow-scrolling: touch !important;
   }
 }
+
+
+/* WM V18 - modal do gráfico com scroll horizontal real no mobile */
+.wm-machine-modal-chart-wrap {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-x pan-y !important;
+}
+.wm-machine-modal-chart-scroll {
+  position: relative !important;
+  height: 360px !important;
+  min-width: 100% !important;
+}
+.wm-machine-modal-chart-scroll canvas {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+@media (max-width: 760px) {
+  .wm-machine-modal-overlay.open {
+    display: block !important;
+    padding: 8px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+  .wm-machine-modal-card {
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    min-height: calc(100dvh - 16px) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    border-radius: 18px !important;
+  }
+  .wm-machine-modal-filters {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    align-items: stretch !important;
+  }
+  .wm-machine-periods {
+    display: flex !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    white-space: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: thin !important;
+  }
+  .wm-machine-periods button {
+    flex: 0 0 132px !important;
+    min-width: 132px !important;
+  }
+  .wm-machine-modal-chart-wrap {
+    width: auto !important;
+    max-width: calc(100vw - 36px) !important;
+    height: 470px !important;
+    margin: 14px 18px 12px !important;
+    padding: 10px !important;
+    border-radius: 18px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+  .wm-machine-modal-chart-scroll {
+    height: 430px !important;
+    min-width: 980px !important;
+  }
+  .wm-machine-modal-chart-scroll canvas {
+    min-width: 980px !important;
+    height: 430px !important;
+  }
+  .wm-machine-modal-empty {
+    left: 10px !important;
+    right: 10px !important;
+  }
+}

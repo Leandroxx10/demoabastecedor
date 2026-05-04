@@ -166,7 +166,7 @@
           </div>
           <button type="button" class="wm-machine-apply" onclick="wmRecarregarModalMaquinaDashboard()"><i class="fas fa-sync-alt"></i> Aplicar</button>
         </div>
-        <div class="wm-machine-modal-chart-wrap"><canvas id="wmMachineModalChart"></canvas><div id="wmMachineModalEmpty" class="wm-machine-modal-empty" hidden>Nenhum dado encontrado para este período.</div></div>
+        <div class="wm-machine-modal-chart-wrap"><div class="wm-machine-modal-chart-scroll"><canvas id="wmMachineModalChart"></canvas></div><div id="wmMachineModalEmpty" class="wm-machine-modal-empty" hidden>Nenhum dado encontrado para este período.</div></div>
         <div class="wm-machine-modal-table-wrap"><table><thead><tr><th>Data</th><th>Hora</th><th>Moldes</th><th>Blanks</th><th>Neck Rings</th><th>Funís</th></tr></thead><tbody id="wmMachineModalTable"></tbody></table></div>
       </div>`;
     document.body.appendChild(overlay);
@@ -201,16 +201,19 @@
     chart = null;
     if (!window.Chart || !canvas || rows.length === 0) return;
     const chartWrap = canvas.closest('.wm-machine-modal-chart-wrap');
-    if (window.matchMedia && window.matchMedia('(max-width: 760px)').matches) {
-      canvas.style.minWidth = '720px';
-      canvas.style.width = '720px';
-      canvas.style.height = '390px';
-      if (chartWrap) chartWrap.scrollLeft = 0;
-    } else {
-      canvas.style.minWidth = '';
-      canvas.style.width = '';
-      canvas.style.height = '';
+    const chartScroll = canvas.closest('.wm-machine-modal-chart-scroll');
+    const isMobile = window.matchMedia && window.matchMedia('(max-width: 760px)').matches;
+    const desiredWidth = isMobile ? Math.max(980, rows.length * 86) : Math.max(1000, rows.length * 72);
+    const desiredHeight = isMobile ? 430 : 360;
+    if (chartScroll) {
+      chartScroll.style.width = isMobile ? `${desiredWidth}px` : '100%';
+      chartScroll.style.minWidth = isMobile ? `${desiredWidth}px` : '0';
+      chartScroll.style.height = `${desiredHeight}px`;
     }
+    canvas.style.width = '100%';
+    canvas.style.height = `${desiredHeight}px`;
+    canvas.style.minWidth = '0';
+    if (chartWrap) chartWrap.scrollLeft = 0;
     chart = new Chart(canvas.getContext('2d'), {
       type: 'line',
       data: { labels: rows.map(r => `${r.hora} (${String(r.data||'').slice(0,5)})`), datasets: [
