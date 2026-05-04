@@ -757,7 +757,7 @@ function createMachineCard(machineId, machineData) {
                 <div class="card-header">
                     <div class="machine-name">
                         <i class="fas fa-industry"></i>
-                        Máquina ${machineId}
+                        ${machineId}
                         ${prefixKey ? `<span class="machine-prefix" title="${prefixKey}"> - ${prefixKey}</span>` : ''}
                     </div>
                     <span class="forno-badge ${forno}">Forno ${forno}</span>
@@ -823,7 +823,7 @@ function createMachineCard(machineId, machineData) {
         <div class="card-header">
             <button type="button" class="machine-name wm-machine-title-btn" onclick="return wmCliqueMaquinaAmostraOuModal(event, '${machineId}')" title="1 clique: amostra | 2 cliques: gráfico">
                 <i class="fas fa-industry"></i>
-                Máquina ${machineId}
+                ${machineId}
                 ${prefixKey ? `<span class="machine-prefix" title="${prefixKey}"> - ${prefixKey}</span>` : ''}
                 ${commentIcon}
             </button>

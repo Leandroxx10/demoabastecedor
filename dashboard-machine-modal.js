@@ -200,6 +200,17 @@
     if (chart && typeof chart.destroy === 'function') chart.destroy();
     chart = null;
     if (!window.Chart || !canvas || rows.length === 0) return;
+    const chartWrap = canvas.closest('.wm-machine-modal-chart-wrap');
+    if (window.matchMedia && window.matchMedia('(max-width: 760px)').matches) {
+      canvas.style.minWidth = '720px';
+      canvas.style.width = '720px';
+      canvas.style.height = '390px';
+      if (chartWrap) chartWrap.scrollLeft = 0;
+    } else {
+      canvas.style.minWidth = '';
+      canvas.style.width = '';
+      canvas.style.height = '';
+    }
     chart = new Chart(canvas.getContext('2d'), {
       type: 'line',
       data: { labels: rows.map(r => `${r.hora} (${String(r.data||'').slice(0,5)})`), datasets: [
@@ -208,7 +219,15 @@
         { label:'Neck Rings', data:rows.map(r=>r.neck_ring), borderColor:'#d97706', backgroundColor:'rgba(217,119,6,.08)', tension:.25, fill:false, hidden:true },
         { label:'Funís', data:rows.map(r=>r.funil), borderColor:'#9ca3af', backgroundColor:'rgba(156,163,175,.08)', tension:.25, fill:false, hidden:true }
       ] },
-      options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'top' } }, scales:{ y:{ beginAtZero:true } } }
+      options: {
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{ legend:{ position:'top', labels:{ boxWidth: 28 } } },
+        scales:{
+          x:{ ticks:{ maxRotation: window.matchMedia && window.matchMedia('(max-width: 760px)').matches ? 55 : 0, minRotation: window.matchMedia && window.matchMedia('(max-width: 760px)').matches ? 55 : 0, autoSkip: false } },
+          y:{ beginAtZero:true }
+        }
+      }
     });
   }
 

@@ -1,24 +1,163 @@
-(function(){
-  const steps=[
-    ['Visão geral','O topo concentra as ações principais: busca individual, atalhos, críticos, atualização, tela cheia, relatório, tutorial e saída.','Use essa área como centro de comando. Ela foi pensada para operação rápida em tela grande.','#demoTopbar'],
-    ['Filtro de máquina','Digite o código da máquina, como A1, B3 ou D10, para localizar rapidamente um card específico.','O filtro foi reduzido para ocupar menos espaço e manter os botões principais visíveis.','#demoSearch'],
-    ['Filtros por forno','Selecione um ou mais fornos para visualizar somente os grupos necessários. O botão Todos os Fornos remove a filtragem.','Em operação, combine busca por máquina com filtro por forno para reduzir erros de lançamento.','#demoFurnaces'],
-    ['Atalhos','O botão Atalhos abre um modal com links cadastráveis. Cada atalho tem nome, URL ou caminho de arquivo e comentário exibido ao passar o mouse.','Use para abrir documentos, planilhas, pastas, sistemas internos ou páginas de apoio sem sair do painel.','#demoShortcut',()=>showOnly('demoShortcutModal')],
-    ['Tela cheia','O botão Tela cheia expande o painel para uso em TV, monitor de acompanhamento ou posto de abastecimento.','Para sair, use Esc ou o próprio botão quando o navegador permitir.','#demoFullscreen'],
-    ['Cards de resumo','Os cards mostram totais gerais de moldes, blanks, neck rings, funis e máquinas críticas.','Eles ajudam a perceber rapidamente o estado geral antes de atuar em uma máquina específica.','#demoSummary'],
-    ['Controle por máquina','Cada card contém os saldos e botões rápidos de entrada e saída. Registre somente na máquina correta.','A última atualização é recalculada quando houver alteração em molde, blank, neck ring ou funil.','#demoMachineCard'],
-    ['Horário atual e última atualização','O card exibe o horário atual do sistema e o horário da última atualização da máquina.','Se a última atualização estiver antiga, valide se a máquina está parada, em manutenção ou sem movimentação recente.','#demoTimes'],
-    ['Amostra e gráfico individual','Um clique no código da máquina marca ou remove amostra. Dois cliques rápidos abrem o modal com o gráfico individual.','Amostra é uma marcação visual. O gráfico individual é usado para auditoria por data e turno.','#demoMachineHead',()=>{document.getElementById('demoMachineCode').classList.add('active');document.getElementById('demoSampleBadge').classList.add('visible');showOnly('demoChartModal')}],
-    ['Modo compacto','O modo compacto reduz elementos visuais para caber mais máquinas na tela.','Use quando o objetivo for acompanhamento geral, não lançamento detalhado.','#demoCompact',()=>document.getElementById('tutorialStage').classList.add('compact')],
-    ['Ver críticos','O botão Ver Críticos filtra máquinas com estoque baixo ou condição crítica.','A regra operacional atual considera estoque baixo quando molde ou blank está próximo do limite configurado.','#demoCritical'],
-    ['Gerar relatório','O relatório consolida os dados do painel para conferência, impressão ou envio.','Antes de gerar, confirme filtros, modo visual e dados atualizados.','#demoReport']
+(function () {
+  const steps = [
+    {
+      label: 'Etapa 1',
+      title: 'Visão geral do cartão',
+      description: 'Cada cartão representa uma máquina. O cabeçalho identifica a máquina e o chip de prefixo permite consultar rapidamente os dados técnicos vinculados.',
+      callout: 'Primeiro localize a máquina correta. Depois valide o prefixo antes de qualquer apontamento.',
+      target: '#demoHeader',
+      action: () => {
+        resetDemo();
+        pulse('#demoHeader');
+      }
+    },
+    {
+      label: 'Etapa 2',
+      title: 'Adicionar quantidades',
+      description: 'Use os botões positivos para registrar entrada de peças. Os incrementos rápidos ajudam quando há reposição em lote.',
+      callout: 'Para reposição simples, use +1 ou +2. Para volumes maiores, use +5 ou +10.',
+      target: '#demoAddGroup',
+      action: () => {
+        resetDemo();
+        pulse('#demoAddGroup');
+        animateValue(12, 17);
+      }
+    },
+    {
+      label: 'Etapa 3',
+      title: 'Remover quantidades',
+      description: 'Use os botões negativos para consumo ou saída. O processo é o mesmo, mas sempre confirme a máquina antes de reduzir o saldo.',
+      callout: 'Registre a baixa imediatamente após o consumo para manter o painel confiável.',
+      target: '#demoRemoveGroup',
+      action: () => {
+        resetDemo();
+        pulse('#demoRemoveGroup');
+        animateValue(12, 10, true);
+      }
+    },
+    {
+      label: 'Etapa 4',
+      title: 'Digitação direta pelo teclado',
+      description: 'Quando precisar ajustar para um valor exato, use o botão do teclado. Ele troca a exibição pelo campo numérico para edição direta.',
+      callout: 'Esse modo é ideal para correções exatas de inventário, contagem física e ajustes pontuais.',
+      target: '#demoKeyboardBtn',
+      action: () => {
+        resetDemo();
+        const keyboard = document.querySelector('#demoKeyboardBtn');
+        const input = document.querySelector('#demoInput');
+        const value = document.querySelector('#demoValue');
+        keyboard.classList.add('pulse-target');
+        keyboard.style.background = '#0f172a';
+        keyboard.style.color = '#fff';
+        value.style.display = 'none';
+        input.style.display = 'block';
+        input.value = 14;
+        input.classList.add('bounce-soft');
+      }
+    },
+    {
+      label: 'Etapa 5',
+      title: 'Consultar os dados do prefixo',
+      description: 'Ao selecionar ou tocar no prefixo, o sistema exibe as informações associadas: processo, corredor, prateleira e demais componentes.',
+      callout: 'Consulte o prefixo sempre que houver dúvida de localização ou composição do conjunto.',
+      target: '#demoPrefixChip',
+      action: () => {
+        resetDemo();
+        pulse('#demoPrefixChip');
+        document.querySelector('#demoPrefixPanel').classList.add('visible');
+      }
+    },
+    {
+      label: 'Etapa 6',
+      title: 'Boas práticas de apontamento',
+      description: 'Faça o registro no momento da movimentação, revise o prefixo, prefira botões rápidos para rotina e use digitação direta apenas quando necessário.',
+      callout: 'Precisão operacional depende de apontamento imediato, prefixo conferido e ajuste feito no item correto.',
+      target: '#demoCard',
+      action: () => {
+        resetDemo();
+        pulse('#demoCard');
+      }
+    }
   ];
-  const qs=s=>document.querySelector(s), qsa=s=>[...document.querySelectorAll(s)];
-  let i=0; const title=qs('#tutorialStepTitle'), label=qs('#tutorialStepLabel'), desc=qs('#tutorialStepDescription'), call=qs('#tutorialCallout'), bar=qs('#tutorialProgressBar'), ring=qs('#spotlightRing'), lis=qsa('#tutorialStepsList li');
-  function reset(){qsa('.pulse-target').forEach(e=>e.classList.remove('pulse-target'));qsa('.demo-modal').forEach(e=>e.classList.remove('visible'));qs('#tutorialStage').classList.remove('compact');qs('#demoMachineCode').classList.remove('active');qs('#demoSampleBadge').classList.remove('visible')}
-  function showOnly(id){qsa('.demo-modal').forEach(e=>e.classList.remove('visible'));const el=document.getElementById(id);if(el)el.classList.add('visible')}
-  function spotlight(sel){const el=qs(sel), stage=qs('#tutorialStage'); if(!el||!stage)return; const a=el.getBoundingClientRect(), b=stage.getBoundingClientRect(); ring.style.opacity='1'; ring.style.left=(a.left-b.left-8)+'px'; ring.style.top=(a.top-b.top-8)+'px'; ring.style.width=(a.width+16)+'px'; ring.style.height=(a.height+16)+'px'; el.classList.add('pulse-target')}
-  function render(n){i=(n+steps.length)%steps.length; reset(); const s=steps[i]; label.textContent='Etapa '+(i+1); title.textContent=s[0]; desc.textContent=s[1]; call.textContent=s[2]; bar.style.width=((i+1)/steps.length*100)+'%'; lis.forEach((li,idx)=>li.classList.toggle('active',idx===i)); if(s[4])s[4](); requestAnimationFrame(()=>spotlight(s[3]));}
-  qs('#prevStepBtn').addEventListener('click',()=>render(i-1)); qs('#nextStepBtn').addEventListener('click',()=>render(i+1)); qs('#startTutorialBtn').addEventListener('click',()=>{qs('#tutorialStageSection').scrollIntoView({behavior:'smooth',block:'start'});render(0)}); lis.forEach((li,idx)=>li.addEventListener('click',()=>render(idx))); window.addEventListener('resize',()=>render(i)); qsa('.demo-modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('visible')}));
-  render(0);
+
+  const stepLabel = document.getElementById('tutorialStepLabel');
+  const stepTitle = document.getElementById('tutorialStepTitle');
+  const stepDescription = document.getElementById('tutorialStepDescription');
+  const callout = document.getElementById('tutorialCallout');
+  const spotlight = document.getElementById('spotlightRing');
+  const progress = document.getElementById('tutorialProgressBar');
+  const listItems = [...document.querySelectorAll('#tutorialStepsList li')];
+  const prevBtn = document.getElementById('prevStepBtn');
+  const nextBtn = document.getElementById('nextStepBtn');
+  const startBtn = document.getElementById('startTutorialBtn');
+  let currentStep = 0;
+
+  function pulse(selector) {
+    document.querySelectorAll('.pulse-target').forEach(el => el.classList.remove('pulse-target'));
+    const el = document.querySelector(selector);
+    if (el) el.classList.add('pulse-target');
+  }
+
+  function resetDemo() {
+    document.querySelectorAll('.pulse-target').forEach(el => el.classList.remove('pulse-target'));
+    document.querySelectorAll('.shake-soft').forEach(el => el.classList.remove('shake-soft'));
+    document.querySelectorAll('.bounce-soft').forEach(el => el.classList.remove('bounce-soft'));
+    document.querySelector('#demoValue').style.display = 'block';
+    document.querySelector('#demoValue').textContent = '12';
+    document.querySelector('#demoValue').style.color = 'var(--accent)';
+    document.querySelector('#demoInput').style.display = 'none';
+    document.querySelector('#demoKeyboardBtn').style.background = '#e2e8f0';
+    document.querySelector('#demoKeyboardBtn').style.color = '#334155';
+    document.querySelector('#demoPrefixPanel').classList.remove('visible');
+  }
+
+  function animateValue(from, to, isDecrease = false) {
+    const value = document.querySelector('#demoValue');
+    value.textContent = String(from);
+    value.style.color = isDecrease ? 'var(--error)' : 'var(--success)';
+    value.classList.add(isDecrease ? 'shake-soft' : 'bounce-soft');
+    setTimeout(() => {
+      value.textContent = String(to);
+    }, 180);
+  }
+
+  function positionSpotlight(selector) {
+    const target = document.querySelector(selector);
+    const stage = document.getElementById('tutorialStage');
+    if (!target || !stage) return;
+
+    const targetRect = target.getBoundingClientRect();
+    const stageRect = stage.getBoundingClientRect();
+
+    spotlight.style.opacity = '1';
+    spotlight.style.left = `${targetRect.left - stageRect.left - 10}px`;
+    spotlight.style.top = `${targetRect.top - stageRect.top - 10}px`;
+    spotlight.style.width = `${targetRect.width + 20}px`;
+    spotlight.style.height = `${targetRect.height + 20}px`;
+  }
+
+  function renderStep(index) {
+    currentStep = (index + steps.length) % steps.length;
+    const step = steps[currentStep];
+    stepLabel.textContent = step.label;
+    stepTitle.textContent = step.title;
+    stepDescription.textContent = step.description;
+    callout.textContent = step.callout;
+    progress.style.width = `${((currentStep + 1) / steps.length) * 100}%`;
+    listItems.forEach((item, i) => item.classList.toggle('active', i === currentStep));
+    step.action();
+    requestAnimationFrame(() => positionSpotlight(step.target));
+  }
+
+  prevBtn.addEventListener('click', () => renderStep(currentStep - 1));
+  nextBtn.addEventListener('click', () => renderStep(currentStep + 1));
+  startBtn.addEventListener('click', () => {
+    document.querySelector('.tutorial-stage-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    renderStep(0);
+  });
+
+  listItems.forEach((item, index) => item.addEventListener('click', () => renderStep(index)));
+  window.addEventListener('resize', () => positionSpotlight(steps[currentStep].target));
+
+  renderStep(0);
 })();

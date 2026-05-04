@@ -2517,3 +2517,87 @@ body.access-page { min-height: 100vh; overflow-x: hidden; background: radial-gra
 .machine-card[data-machine-id] { cursor: pointer; }
 .machine-card .details-btn, .machine-card .wm-card-time-meta, .machine-card .wm-machine-title-btn { cursor: pointer; }
 .wm-card-time-meta { z-index: 5; }
+
+
+/* WM V17 - ajuste solicitado: remover texto fixo nos cards + modal de gráfico responsivo mobile */
+@media (max-width: 760px) {
+  .wm-machine-modal-overlay {
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    padding: 10px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .wm-machine-modal-card {
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    min-height: calc(100vh - 20px) !important;
+    overflow-y: auto !important;
+    border-radius: 18px !important;
+  }
+
+  .wm-machine-modal-header {
+    padding: 20px 58px 16px 18px !important;
+    gap: 10px !important;
+  }
+
+  .wm-machine-modal-header h2 {
+    font-size: 21px !important;
+  }
+
+  .wm-machine-modal-summary {
+    justify-items: start !important;
+  }
+
+  .wm-machine-modal-filters {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    padding: 16px 18px !important;
+  }
+
+  .wm-machine-modal-filters input[type="date"] {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .wm-machine-periods {
+    width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    white-space: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .wm-machine-periods button {
+    min-width: 118px !important;
+    flex: 0 0 auto !important;
+  }
+
+  .wm-machine-apply {
+    width: 100% !important;
+  }
+
+  .wm-machine-modal-chart-wrap {
+    height: 430px !important;
+    margin: 16px 18px 12px !important;
+    padding: 12px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .wm-machine-modal-chart-wrap canvas {
+    min-width: 720px !important;
+    max-width: none !important;
+  }
+
+  .wm-machine-modal-table-wrap {
+    margin: 0 18px 18px !important;
+    max-width: calc(100vw - 56px) !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
