@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wmoldes-pwa-v1';
+const CACHE_NAME = 'wmoldes-pwa-v21-tour-interativo';
 const OFFLINE_URLS = [
   '/',
   '/index.html',
@@ -11,7 +11,9 @@ const OFFLINE_URLS = [
   '/manifest.webmanifest',
   '/tutorial.html',
   '/tutorial.css',
-  '/tutorial.js'
+  '/tutorial.js',
+  '/tutorial-tour.css',
+  '/tutorial-tour.js'
 ];
 
 self.addEventListener('install', event => {

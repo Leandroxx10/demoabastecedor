@@ -11,6 +11,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="atalhos.css?v=20260503v13">
     <link rel="stylesheet" href="wm-fullscreen-toggle.css?v=20260503v14">
+    <link rel="stylesheet" href="tutorial-tour.css?v=20260504v21">
 </head>
 <body>
     <div class="background-shapes">
@@ -160,7 +161,7 @@
             <i class="fas fa-industry"></i>
         </div>
         <h2 class="login-title">WMoldes | Painel de Controle</h2>
-        <p class="login-subtitle">Sistema de gerenciamento de produção</p>
+        <p class="login-subtitle">Sistema de gerenciamento de abastecimento</p>
         
         <form class="login-form" id="loginForm">
             <div class="input-group">
@@ -188,9 +189,9 @@
         ====================================================
         -->
         <header>
-            <h1 id="tituloPrincipal"><i class="fas fa-industry"></i> Painel de Controle de Produção</h1>
+            <h1 id="tituloPrincipal"><i class="fas fa-industry"></i> Painel de Controle de Abastecimento</h1>
             <p style="text-align: center; color: #94a3b8; margin-bottom: 30px; max-width: 800px; margin-left: auto; margin-right: auto;">
-                Monitoramento em tempo real da produção de moldes, blanks, neck rings e funis
+                Monitoramento em tempo real do abastecimento de moldes, blanks, neck rings e funis
             </p>
         </header>
 
@@ -230,8 +231,12 @@
                     <i class="fas fa-file-pdf"></i> Gerar Relatório
                 </button>
 
-                <button class="tutorial-btn" onclick="window.location.href='tutorial.html'">
-                    <i class="fas fa-graduation-cap"></i> Tutorial
+                <button class="tutorial-btn" onclick="window.location.href='tutorial.html'" title="Abrir o manual completo em página separada">
+                    <i class="fas fa-book-open"></i> Manual
+                </button>
+
+                <button class="tour-launch-btn" id="btnIniciarTour" type="button" onclick="window.WMInteractiveTour && window.WMInteractiveTour.start()" title="Iniciar tutorial interativo dentro do sistema">
+                    <i class="fas fa-route"></i> Iniciar tour
                 </button>
                 
                 <button class="logout" onclick="logout()">
@@ -311,7 +316,7 @@
                     <i class="fas fa-chart-line"></i> Dashboard
                 </button>
                 <button class="tab-btn active" onclick="openTab('controle')">
-                    <i class="fas fa-cogs"></i> Controle de Produção
+                    <i class="fas fa-cogs"></i> Controle de Abastecimento
                 </button>
 
                 <button
@@ -398,6 +403,7 @@
     <script src="dashboard-machine-modal.js?v=20260504v20"></script>
     <script src="atalhos.js?v=20260503v13"></script>
     <script src="wm-fullscreen-toggle.js?v=20260503v17"></script>
+    <script src="tutorial-tour.js?v=20260504v21"></script>
     <script src="pwa-register.js"></script>
 </body>
 </html>
