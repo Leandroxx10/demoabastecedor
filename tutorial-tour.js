@@ -1,12 +1,12 @@
 /* =========================================================
    WMoldes - Tour interativo operacional
-   Versão: 2026-05-04 v21
+   Versão: 2026-05-04 v22
    Observação: utiliza o termo "abastecimento" em vez de "produção".
    ========================================================= */
 (function () {
   'use strict';
 
-  const TOUR_VERSION = '20260504v21';
+  const TOUR_VERSION = '20260504v22';
   const MOBILE_QUERY = '(max-width: 768px)';
 
   const steps = [
@@ -262,9 +262,15 @@
     return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
   }
 
+  function isMainContentReady() {
+    const main = document.querySelector('#mainContent');
+    const login = document.querySelector('#loginScreen');
+    return !!main && isVisible(main) && (!login || !isVisible(login));
+  }
+
   function start(index) {
-    if (!document.querySelector('#mainContent')) {
-      return;
+    if (!isMainContentReady()) {
+      return false;
     }
 
     currentIndex = Number.isInteger(index) ? Math.max(0, Math.min(index, steps.length - 1)) : 0;
@@ -277,6 +283,7 @@
     document.addEventListener('keydown', handleKeydown, true);
     window.addEventListener('resize', handleResize, true);
     window.addEventListener('scroll', handleResize, true);
+    return true;
   }
 
   function stop() {
@@ -449,11 +456,32 @@
     version: TOUR_VERSION
   };
 
+  function removeTourQueryParam() {
+    try {
+      const url = new URL(window.location.href);
+      if (!url.searchParams.has('tour')) return;
+      url.searchParams.delete('tour');
+      const cleanUrl = url.pathname + (url.search ? url.search : '') + url.hash;
+      window.history.replaceState(window.history.state, document.title, cleanUrl);
+    } catch (_) {}
+  }
+
+  function waitForMainContentAndStart(attempt) {
+    if (start(0)) return;
+    if (attempt >= 20) return;
+    window.setTimeout(function () {
+      waitForMainContentAndStart(attempt + 1);
+    }, 250);
+  }
+
   function startFromQueryParam() {
     try {
       const params = new URLSearchParams(window.location.search);
       if (!params.has('tour')) return;
-      window.setTimeout(function () { start(0); }, 900);
+      removeTourQueryParam();
+      window.setTimeout(function () {
+        waitForMainContentAndStart(0);
+      }, 300);
     } catch (_) {}
   }
 

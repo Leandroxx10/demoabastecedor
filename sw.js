@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wmoldes-pwa-v21-tour-interativo';
+const CACHE_NAME = 'wmoldes-pwa-v22-tour-relogin-fix';
 const OFFLINE_URLS = [
   '/',
   '/index.html',
