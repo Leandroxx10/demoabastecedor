@@ -27,12 +27,18 @@ async function getCurrentUserData(user = auth.currentUser) {
 
         if (!userData) return null;
 
+        const role = normalizeRole(userData.role || userData.perfil || userData.funcao);
+        const isActive = userData.isActive !== false && userData.ativo !== false && userData.active !== false;
+        const displayName = userData.name || userData.nome || user.displayName || '';
+
         return {
             uid: user.uid,
-            email: user.email,
+            email: String(user.email || userData.email || '').trim().toLowerCase(),
             ...userData,
-            role: normalizeRole(userData.role),
-            isActive: userData.isActive !== false
+            name: displayName,
+            nome: userData.nome || displayName,
+            role,
+            isActive
         };
     } catch (error) {
         console.error("❌ Erro ao carregar dados do usuário:", error);
@@ -54,23 +60,34 @@ async function login(email, password) {
             };
         }
 
-        await db.ref(`users/${userCredential.user.uid}`).update({
-            email: normalizedEmail,
-            lastLogin: Date.now()
-        });
+        const loginAt = Date.now();
+        try {
+            await db.ref(`users/${userCredential.user.uid}`).update({
+                email: normalizedEmail,
+                lastLogin: loginAt
+            });
+        } catch (updateError) {
+            // Regras mais restritas podem impedir que usuários comuns atualizem o próprio cadastro.
+            // Isso não deve bloquear o acesso quando Auth e users/{uid} estão válidos.
+            console.warn("⚠️ Login aceito, mas lastLogin não foi atualizado:", updateError);
+        }
 
         localStorage.setItem('userEmail', normalizedEmail);
         localStorage.setItem('userUID', userCredential.user.uid);
 
-        await writeAuditLog({
-            action: 'login no sistema',
-            details: 'Usuário autenticado com sucesso.',
-            entityType: 'auth',
-            entityId: userCredential.user.uid,
-            targetPath: `users/${userCredential.user.uid}`,
-            before: null,
-            after: { lastLogin: Date.now() }
-        });
+        try {
+            await writeAuditLog({
+                action: 'login no sistema',
+                details: 'Usuário autenticado com sucesso.',
+                entityType: 'auth',
+                entityId: userCredential.user.uid,
+                targetPath: `users/${userCredential.user.uid}`,
+                before: null,
+                after: { lastLogin: loginAt }
+            });
+        } catch (auditError) {
+            console.warn("⚠️ Login aceito, mas auditoria de login não foi gravada:", auditError);
+        }
 
         return { success: true, user: userCredential.user, userData };
     } catch (error) {
@@ -102,13 +119,17 @@ async function login(email, password) {
 async function logout() {
     try {
         const actor = getAuditUser();
-        await writeAuditLog({
-            action: 'logout do sistema',
-            details: 'Usuário encerrou a sessão.',
-            entityType: 'auth',
-            entityId: actor.uid,
-            targetPath: `users/${actor.uid || 'desconhecido'}`
-        });
+        try {
+            await writeAuditLog({
+                action: 'logout do sistema',
+                details: 'Usuário encerrou a sessão.',
+                entityType: 'auth',
+                entityId: actor.uid,
+                targetPath: `users/${actor.uid || 'desconhecido'}`
+            });
+        } catch (auditError) {
+            console.warn("⚠️ Auditoria de logout não foi gravada:", auditError);
+        }
 
         await auth.signOut();
         localStorage.removeItem('userEmail');

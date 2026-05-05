@@ -433,13 +433,15 @@
                 "auth/email-already-in-use": "Este e-mail já está cadastrado.",
                 "auth/invalid-email": "O e-mail informado é inválido.",
                 "auth/weak-password": "A senha está fraca. Use pelo menos 6 caracteres.",
-                "auth/operation-not-allowed": "Ative Email/Password em Firebase Authentication > Sign-in method."
+                "auth/operation-not-allowed": "Ative Email/Password em Firebase Authentication > Sign-in method.",
+                "PERMISSION_DENIED": "Sem permissão para gravar o cadastro. Entre com uma conta administradora antes de cadastrar.",
+                "permission_denied": "Sem permissão para gravar o cadastro. Entre com uma conta administradora antes de cadastrar."
             };
             return map[error.code] || error.message || "Erro inesperado ao cadastrar usuário.";
         }
 
         function abrirModal(user) {
-            document.getElementById("modalNome").textContent = user.nome;
+            document.getElementById("modalNome").textContent = user.name || user.nome || "";
             document.getElementById("modalEmail").textContent = user.email;
             document.getElementById("modalRole").textContent = user.role;
             document.getElementById("successModal").classList.add("show");
@@ -449,13 +451,41 @@
             document.getElementById("successModal").classList.remove("show");
         }
 
+        function aguardarSessao() {
+            return new Promise((resolve, reject) => {
+                const unsubscribe = auth.onAuthStateChanged(resolve, reject);
+                setTimeout(() => {
+                    unsubscribe();
+                    resolve(auth.currentUser || null);
+                }, 4000);
+            });
+        }
+
+        async function obterAdministradorAtual() {
+            const adminUser = await aguardarSessao();
+            if (!adminUser) {
+                throw new Error("Faça login como administrador antes de cadastrar usuários.");
+            }
+
+            const snap = await db.ref(`users/${adminUser.uid}`).once("value");
+            const adminData = snap.val();
+            const adminAtivo = adminData && adminData.isActive !== false && adminData.ativo !== false;
+            const adminRole = normalizeRole(adminData && adminData.role);
+
+            if (!adminAtivo || adminRole !== "admin") {
+                throw new Error("Apenas administradores ativos podem cadastrar usuários.");
+            }
+
+            return adminUser;
+        }
+
         form.addEventListener("submit", async (event) => {
             event.preventDefault();
 
             const nome = document.getElementById("nome").value.trim();
             const email = document.getElementById("email").value.trim().toLowerCase();
             const senha = document.getElementById("senha").value;
-            const role = document.getElementById("role").value;
+            const role = normalizeRole(document.getElementById("role").value);
 
             if (!nome || !email || !senha || !role) {
                 showToast("Preencha todos os campos.", "error");
@@ -464,40 +494,65 @@
 
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cadastrando...';
-            showToast("Criando usuário no Firebase...", "info");
+            showToast("Validando permissão administrativa...", "info");
 
             let secondaryApp = null;
+            let createdUser = null;
 
             try {
-                secondaryApp = firebase.initializeApp(firebaseConfig, `cadastro-${Date.now()}`);
+                const adminUser = await obterAdministradorAtual();
+
+                const existingSnap = await db.ref("users").orderByChild("email").equalTo(email).once("value");
+                if (existingSnap.exists()) {
+                    throw new Error("Este e-mail já está cadastrado no banco de usuários.");
+                }
+
+                showToast("Criando usuário no Firebase Auth...", "info");
+                secondaryApp = firebase.initializeApp(firebaseConfig, `cadastro-${Date.now()}-${Math.random().toString(36).slice(2)}`);
                 const secondaryAuth = secondaryApp.auth();
 
                 const credential = await secondaryAuth.createUserWithEmailAndPassword(email, senha);
-                const uid = credential.user.uid;
+                createdUser = credential.user;
+                const uid = createdUser.uid;
 
+                if (typeof createdUser.updateProfile === "function") {
+                    await createdUser.updateProfile({ displayName: nome });
+                }
+
+                const now = Date.now();
                 const userData = {
+                    uid,
                     nome,
+                    name: nome,
                     email,
                     role,
+                    isActive: true,
                     ativo: true,
-                    criadoEm: Date.now(),
-                    atualizadoEm: Date.now(),
-                    origem: "cadastro-usuario.html"
+                    criadoEm: now,
+                    createdAt: now,
+                    atualizadoEm: now,
+                    updatedAt: now,
+                    criadoPor: adminUser.email || adminUser.uid,
+                    createdBy: adminUser.email || adminUser.uid,
+                    origem: "cadastro-usuario.html",
+                    lastLogin: null
                 };
 
                 await db.ref(`users/${uid}`).set(userData);
                 await secondaryAuth.signOut();
-                await secondaryApp.delete();
 
                 showToast("Usuário cadastrado com sucesso.", "success");
                 abrirModal(userData);
                 form.reset();
             } catch (error) {
-                if (secondaryApp) {
-                    try { await secondaryApp.delete(); } catch (_) {}
+                if (createdUser) {
+                    try { await createdUser.delete(); } catch (deleteError) { console.warn("Não foi possível remover usuário órfão:", deleteError); }
                 }
                 showToast(traduzirErro(error), "error");
             } finally {
+                if (secondaryApp) {
+                    try { await secondaryApp.delete(); } catch (_) {}
+                }
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="fas fa-user-plus"></i> Cadastrar usuário';
             }

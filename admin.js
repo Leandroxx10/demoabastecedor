@@ -259,17 +259,38 @@ async function carregarUsuarios() {
 async function criarUsuario(e) {
     e.preventDefault();
     
-    const email = document.getElementById('newEmail')?.value.trim();
-    const password = document.getElementById('newPassword')?.value;
-    const role = document.getElementById('newRole')?.value;
-    const name = document.getElementById('newName')?.value.trim();
+    const email = String(document.getElementById('newEmail')?.value || '').trim().toLowerCase();
+    const password = document.getElementById('newPassword')?.value || '';
+    const role = normalizeRole(document.getElementById('newRole')?.value || 'carregador');
+    const name = String(document.getElementById('newName')?.value || '').trim();
+    const submitButton = e.submitter || document.querySelector('#userForm button[type="submit"]');
     
     if (!email || !password) {
         mostrarNotificacaoAdmin("Preencha todos os campos obrigatórios", "error");
         return;
     }
+
+    if (password.length < 6) {
+        mostrarNotificacaoAdmin("A senha deve ter pelo menos 6 caracteres.", "error");
+        return;
+    }
     
+    let secondaryApp = null;
+    let createdUser = null;
+    let databaseSaved = false;
+    const adminUser = auth.currentUser;
+
     try {
+        if (!adminUser) {
+            mostrarNotificacaoAdmin("Sessão administrativa não encontrada. Faça login novamente.", "error");
+            return;
+        }
+
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando...';
+        }
+
         // Verificar se já existe um usuário com este email
         const usersSnapshot = await db.ref('users').orderByChild('email').equalTo(email).once('value');
         if (usersSnapshot.exists()) {
@@ -277,23 +298,45 @@ async function criarUsuario(e) {
             return;
         }
         
-        // Criar usuário no Firebase Auth
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-        const userId = userCredential.user.uid;
+        // Criar o usuário em um app secundário para não trocar a sessão do administrador atual.
+        secondaryApp = firebase.initializeApp(firebaseConfig, `admin-create-user-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+        const secondaryAuth = secondaryApp.auth();
+        const userCredential = await secondaryAuth.createUserWithEmailAndPassword(email, password);
+        createdUser = userCredential.user;
+        const userId = createdUser.uid;
+
+        if (name && typeof createdUser.updateProfile === 'function') {
+            await createdUser.updateProfile({ displayName: name });
+        }
         
-        // Salvar informações adicionais no Database
+        // Salvar informações adicionais no Database usando a sessão administrativa principal.
+        const now = Date.now();
         await db.ref(`users/${userId}`).set({
-            email: email,
-            role: role || 'Carregador',
+            uid: userId,
+            email,
+            role,
             name: name || null,
-            createdAt: Date.now(),
-            createdBy: auth.currentUser.email,
-            lastLogin: null,
-            isActive: true
+            nome: name || null,
+            isActive: true,
+            ativo: true,
+            createdAt: now,
+            criadoEm: now,
+            updatedAt: now,
+            atualizadoEm: now,
+            createdBy: adminUser.email || adminUser.uid,
+            origem: 'admin.html',
+            lastLogin: null
         });
+        databaseSaved = true;
+
+        await secondaryAuth.signOut();
         
-        // Log da ação
-        await logAction(`criou o usuário ${email} (${role})`);
+        // Log da ação não deve invalidar um cadastro já concluído.
+        try {
+            await logAction(`criou o usuário ${email} (${role})`);
+        } catch (logError) {
+            console.warn('Não foi possível registrar log de criação de usuário:', logError);
+        }
         
         // Limpar formulário
         const userForm = document.getElementById('userForm');
@@ -306,6 +349,11 @@ async function criarUsuario(e) {
         
     } catch (error) {
         console.error("❌ Erro ao criar usuário:", error);
+
+        // Se o Auth foi criado mas o Database falhou, remove a conta recém-criada para não deixar usuário órfão.
+        if (createdUser && !databaseSaved) {
+            try { await createdUser.delete(); } catch (deleteError) { console.warn('Não foi possível remover usuário órfão:', deleteError); }
+        }
         
         let errorMessage = "Erro ao criar usuário: ";
         switch(error.code) {
@@ -316,16 +364,28 @@ async function criarUsuario(e) {
                 errorMessage = "Email inválido.";
                 break;
             case 'auth/operation-not-allowed':
-                errorMessage = "Operação não permitida.";
+                errorMessage = "Operação não permitida. Habilite Email/Password no Firebase Authentication.";
                 break;
             case 'auth/weak-password':
                 errorMessage = "Senha muito fraca. Use pelo menos 6 caracteres.";
+                break;
+            case 'PERMISSION_DENIED':
+            case 'permission_denied':
+                errorMessage = "Sem permissão para gravar em users/{uid}. Entre com uma conta administradora.";
                 break;
             default:
                 errorMessage += error.message;
         }
         
         mostrarNotificacaoAdmin(errorMessage, "error");
+    } finally {
+        if (secondaryApp) {
+            try { await secondaryApp.delete(); } catch (_) {}
+        }
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="fas fa-save"></i> Criar Usuário';
+        }
     }
 }
 

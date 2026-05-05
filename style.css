@@ -1871,6 +1871,22 @@ body.dark-mode .preloader-spinner {
     min-width: 42px;
 }
 
+.valor-editavel {
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 2px 8px;
+    transition: var(--transition);
+    user-select: none;
+}
+
+.valor-editavel:hover,
+.valor-editavel:focus-visible {
+    background: rgba(14, 165, 233, 0.12);
+    color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.16);
+}
+
 .input-digitado {
     display: none;
     width: 70px;

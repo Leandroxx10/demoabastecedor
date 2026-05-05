@@ -85,11 +85,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         }, 500);
     }, 1500);
     
-    // Verificar autenticação
+    // Verificar autenticação e cadastro ativo no banco
     const user = await checkAuth();
+    const userData = user ? await getCurrentUserData(user) : null;
     
-    if (user) {
-        // Usuário autenticado
+    if (user && userData && userData.isActive) {
+        // Usuário autenticado e liberado no cadastro
         loginScreen.style.display = 'none';
         mainContent.style.display = 'block';
         
@@ -110,6 +111,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         console.log("✅ Sistema inicializado para:", user.email);
     } else {
+        if (user && (!userData || !userData.isActive)) {
+            await auth.signOut();
+            mostrarErroLogin(userData ? "Usuário inativo. Verifique o acesso com um administrador." : "Usuário sem cadastro ativo. Cadastre pelo painel administrativo antes de acessar.");
+        }
         // Mostrar tela de login
         loginScreen.style.display = 'block';
         mainContent.style.display = 'none';
@@ -615,10 +620,13 @@ function renderLinhaControle(maquinaId, tipo, rotulo, icone, classeBotao, valor,
                     <button class="${classeBotao}" onclick="alterar('${maquinaId}', '${tipo}', -1)">-1</button>
                 </div>
                 <div class="valor-controle">
-                    <span id="${maquinaId}-${tipo}">${valor}</span>
-                    <input type="number" class="input-digitado" id="input-${maquinaId}-${tipo}" value="${valor}"
+                    <span id="${maquinaId}-${tipo}" class="valor-editavel" role="button" tabindex="0"
+                          title="Clique para editar o valor"
+                          onclick="toggleModoDigitado('${maquinaId}', '${tipo}', event)"
+                          onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleModoDigitado('${maquinaId}', '${tipo}', event); }">${valor}</span>
+                    <input type="number" class="input-digitado" id="input-${maquinaId}-${tipo}" value="${valor}" min="0" inputmode="numeric"
                            onblur="atualizarPorInput('${maquinaId}', '${tipo}', this.value)"
-                           onkeypress="if(event.key === 'Enter') { atualizarPorInput('${maquinaId}', '${tipo}', this.value); this.blur(); }">
+                           onkeydown="if(event.key === 'Enter') { atualizarPorInput('${maquinaId}', '${tipo}', this.value); this.blur(); } else if(event.key === 'Escape') { cancelarModoDigitado('${maquinaId}', '${tipo}'); }">
                 </div>
                 <div class="btn-group incrementos">
                     <button class="${classeBotao}" onclick="alterar('${maquinaId}', '${tipo}', 1)">+1</button>
@@ -626,7 +634,7 @@ function renderLinhaControle(maquinaId, tipo, rotulo, icone, classeBotao, valor,
                     <button class="${classeBotao}" onclick="alterar('${maquinaId}', '${tipo}', 5)">+5</button>
                     <button class="${classeBotao}" onclick="alterar('${maquinaId}', '${tipo}', 10)">+10</button>
                 </div>
-                <button class="btn-digitado" onclick="toggleModoDigitado('${maquinaId}', '${tipo}')" title="Digitar valor manualmente" aria-label="Digitar valor manualmente">
+                <button class="btn-digitado" onpointerdown="event.preventDefault()" onclick="toggleModoDigitado('${maquinaId}', '${tipo}', event)" title="Digitar valor manualmente" aria-label="Digitar valor manualmente">
                     <i class="fas fa-keyboard"></i>
                 </button>
             </div>
@@ -1681,22 +1689,55 @@ window.mostrarNotificacao = mostrarNotificacao;
 // FUNÇÕES PARA MODO DIGITADO
 // ====================================================
 
-function toggleModoDigitado(maquinaId, tipo) {
+function toggleModoDigitado(maquinaId, tipo, evt = null) {
     const spanElement = document.getElementById(`${maquinaId}-${tipo}`);
     const inputElement = document.getElementById(`input-${maquinaId}-${tipo}`);
-    const btnElement = event.currentTarget;
+    const controles = inputElement ? inputElement.closest('.controles') : null;
+    const btnElement = controles ? controles.querySelector('.btn-digitado') : null;
+
+    if (!spanElement || !inputElement) return;
+    if (evt && typeof evt.stopPropagation === 'function') evt.stopPropagation();
+    if (isMachineInMaintenance(maquinaId)) {
+        mostrarNotificacao('Máquina em parada para manutenção.', 'warning');
+        return;
+    }
+
+    const inputVisivel = inputElement.style.display === 'block';
     
-    if (inputElement.style.display === 'none' || inputElement.style.display === '') {
-        // Mostrar input, esconder span
+    if (!inputVisivel) {
+        // Mostrar input, esconder span. O mesmo comportamento vale para o botão de teclado e para o clique direto no número.
+        inputElement.value = parseInt(spanElement.textContent, 10) || 0;
         spanElement.style.display = 'none';
         inputElement.style.display = 'block';
         inputElement.focus();
         inputElement.select();
-        btnElement.innerHTML = '<i class="fas fa-check"></i>';
-        btnElement.classList.add('ativo-digitacao');
+        if (btnElement) {
+            btnElement.innerHTML = '<i class="fas fa-check"></i>';
+            btnElement.classList.add('ativo-digitacao');
+            btnElement.setAttribute('aria-label', 'Confirmar valor digitado');
+            btnElement.setAttribute('title', 'Confirmar valor digitado');
+        }
     } else {
-        // Mostrar span, esconder input
+        // Confirmar valor digitado
         atualizarPorInput(maquinaId, tipo, inputElement.value);
+    }
+}
+
+function cancelarModoDigitado(maquinaId, tipo) {
+    const spanElement = document.getElementById(`${maquinaId}-${tipo}`);
+    const inputElement = document.getElementById(`input-${maquinaId}-${tipo}`);
+    const btnElement = inputElement?.closest('.controles')?.querySelector('.btn-digitado');
+
+    if (!spanElement || !inputElement) return;
+
+    inputElement.value = parseInt(spanElement.textContent, 10) || 0;
+    spanElement.style.display = 'block';
+    inputElement.style.display = 'none';
+    if (btnElement) {
+        btnElement.innerHTML = '<i class="fas fa-keyboard"></i>';
+        btnElement.classList.remove('ativo-digitacao');
+        btnElement.setAttribute('aria-label', 'Digitar valor manualmente');
+        btnElement.setAttribute('title', 'Digitar valor manualmente');
     }
 }
 
@@ -1723,8 +1764,12 @@ async function atualizarPorInput(maquinaId, tipo, valor) {
     inputElement.value = novoValor;
     spanElement.style.display = 'block';
     inputElement.style.display = 'none';
-    btnElement.innerHTML = '<i class="fas fa-keyboard"></i>';
-    btnElement.classList.remove('ativo-digitacao');
+    if (btnElement) {
+        btnElement.innerHTML = '<i class="fas fa-keyboard"></i>';
+        btnElement.classList.remove('ativo-digitacao');
+        btnElement.setAttribute('aria-label', 'Digitar valor manualmente');
+        btnElement.setAttribute('title', 'Digitar valor manualmente');
+    }
 
     try {
         if (window.WMHistory && typeof WMHistory.setFieldAndSnapshot === 'function') {
@@ -1756,6 +1801,7 @@ async function atualizarPorInput(maquinaId, tipo, valor) {
 
 // Exportar as novas funções
 window.toggleModoDigitado = toggleModoDigitado;
+window.cancelarModoDigitado = cancelarModoDigitado;
 window.atualizarPorInput = atualizarPorInput;
 
 // Exportar função de notificação

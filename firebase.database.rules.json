@@ -1,11 +1,11 @@
 {
   "rules": {
-    ".read": "auth != null && root.child('users').child(auth.uid).child('isActive').val() !== false",
+    ".read": "auth != null && root.child('users').child(auth.uid).exists() && root.child('users').child(auth.uid).child('isActive').val() !== false && root.child('users').child(auth.uid).child('ativo').val() !== false",
     "maquinas": {
-      ".write": "auth != null && root.child('users').child(auth.uid).child('isActive').val() !== false"
+      ".write": "auth != null && root.child('users').child(auth.uid).exists() && root.child('users').child(auth.uid).child('isActive').val() !== false && root.child('users').child(auth.uid).child('ativo').val() !== false"
     },
     "configuracoes": {
-      ".write": "auth != null && root.child('users').child(auth.uid).child('isActive').val() !== false"
+      ".write": "auth != null && root.child('users').child(auth.uid).exists() && root.child('users').child(auth.uid).child('isActive').val() !== false && root.child('users').child(auth.uid).child('ativo').val() !== false"
     },
     "prefixDatabase": {
       ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'"
@@ -13,7 +13,7 @@
     "logs": {
       ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
       "$logId": {
-        ".write": "auth != null && root.child('users').child(auth.uid).child('isActive').val() !== false",
+        ".write": "auth != null && root.child('users').child(auth.uid).exists() && root.child('users').child(auth.uid).child('isActive').val() !== false && root.child('users').child(auth.uid).child('ativo').val() !== false",
         ".validate": "newData.hasChildren(['user','action','timestamp'])"
       }
     },
@@ -33,10 +33,10 @@
       ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'"
     },
     "manutencao": {
-      ".write": "auth != null && root.child('users').child(auth.uid).child('isActive').val() !== false"
+      ".write": "auth != null && root.child('users').child(auth.uid).exists() && root.child('users').child(auth.uid).child('isActive').val() !== false && root.child('users').child(auth.uid).child('ativo').val() !== false"
     },
     "$other": {
-      ".write": "auth != null && root.child('users').child(auth.uid).child('isActive').val() !== false"
+      ".write": "auth != null && root.child('users').child(auth.uid).exists() && root.child('users').child(auth.uid).child('isActive').val() !== false && root.child('users').child(auth.uid).child('ativo').val() !== false"
     }
   }
 }
